@@ -1,0 +1,5 @@
+# Phase 0 only verifies that a YAML configuration is a mapping.
+# The complete validation schema and usable example arrive in Phase 6.
+project:
+  name: ModelGate
+  phase: foundation
