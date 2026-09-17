@@ -6,6 +6,8 @@ before a potential release.
 
 The project is being built incrementally. Phase 1 provides reproducible IBM
 Telco data preparation and Logistic Regression / Random Forest baselines.
+Phase 2 adds a library of evidence-based data checks for schema, missingness,
+duplicates, train/reference overlap, and limited leakage heuristics.
 It does **not** yet provide the general validation engine or
 `modelgate validate` command.
 
@@ -89,10 +91,32 @@ Both models reproduced reference probabilities within absolute tolerance
 measurements, not production, temporal, fairness, or calibration evidence. See
 [full results and limitations](docs/EXPERIMENTS.md).
 
+## Run the Phase 2 data-check demonstration
+
+After preparing the data, run:
+
+```powershell
+.venv\Scripts\python scripts/demo_data_checks.py
+```
+
+This writes individual check results to ignored
+`reports/generated/phase2_data_checks.json`. Choose another `--output` path if
+the file already exists. The library API is `run_data_checks(train, reference,
+policy)`; see [Data validation](docs/DATA_VALIDATION.md) for settings and semantics.
+The complete YAML schema, public CLI, overall status, and validation exit codes
+are still Phase 6 work. The demo's success exit only means its output was written.
+
+On 2026-09-17, the prepared Telco split produced **135 PASS, 1 WARNING, 0 FAIL**
+individual results. The warning identified 10 reference rows (0.7097%) whose
+predictors match training rows. There was zero identifier overlap. Identical
+attributes can belong to different customers; the warning is not proof of
+contamination or a reason to modify the split.
+
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Dataset source and schema](docs/DATASET.md)
+- [Data validation rules and evidence](docs/DATA_VALIDATION.md)
 - [Decisions](docs/DECISIONS.md)
 - [Build log](docs/BUILD_LOG.md)
 - [Experiments](docs/EXPERIMENTS.md)

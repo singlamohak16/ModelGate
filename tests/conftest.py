@@ -37,3 +37,39 @@ def mock_download(monkeypatch, raw_telco):
     monkeypatch.setattr(dataset, "SOURCE_SHA256", sha256_bytes(content))
     monkeypatch.setattr(dataset, "urlopen", lambda *args, **kwargs: io.BytesIO(content))
     return content
+
+
+@pytest.fixture
+def check_policy():
+    from modelgate.checks.policy import DataCheckPolicy
+
+    return DataCheckPolicy(
+        required_columns=("id", "amount", "visits", "group", "flag", "target"),
+        column_types={
+            "amount": "number",
+            "visits": "integer",
+            "group": "category",
+            "flag": "category",
+        },
+        target_column="target",
+        target_labels=(0, 1),
+        positive_class_label=1,
+        identifier_columns=("id",),
+        segment_column="group",
+        allowed_categories={"flag": ("A", "B")},
+        min_leakage_rows=4,
+    )
+
+
+@pytest.fixture
+def check_frame():
+    return pd.DataFrame(
+        {
+            "id": [f"T{i}" for i in range(6)],
+            "amount": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0],
+            "visits": [1, 2, 3, 4, 5, 6],
+            "group": ["g1", "g1", "g2", "g2", "g1", "g2"],
+            "flag": ["A", "A", "B", "B", "A", "B"],
+            "target": [0, 1, 0, 1, 0, 1],
+        }
+    )

@@ -139,3 +139,76 @@
 - **Reason:** Two small commands need no additional dependency.
 - **Alternatives:** Typer provides richer CLI ergonomics; a notebook helps
   exploration but is less direct for reproducible command-driven runs.
+
+## D012 — Separate measurements from data-check policy
+
+- **Date:** 2026-09-17
+- **Status:** Accepted
+- **Decision:** Return validated `CheckResult` objects containing measurement,
+  threshold, status, evidence, and evaluation state. Keep policy in a small
+  Pydantic settings object, with full YAML/run orchestration deferred to Phase 6.
+- **Reason:** Multiple independent defects should be inspectable in one run.
+  Unexpected programming errors still propagate rather than appearing as results.
+- **Alternatives:** Raising on every violation is simpler but hides later defects;
+  using Pandera adds schema capabilities and another dependency to explain.
+
+## D013 — Define missingness and strict threshold boundaries
+
+- **Date:** 2026-09-17
+- **Status:** Accepted
+- **Decision:** Null, empty, and whitespace-only values are missing; other strings
+  remain literal. Fractions use total dataset rows, and values strictly greater
+  than the configured maximum fail. Default feature missingness maximum is 5%.
+- **Reason:** Clear denominators and equality behavior make results testable.
+  Target, ID, and segment requirements are independent of missingness exclusions.
+- **Alternatives:** Treating every common NA token as missing could erase legitimate
+  categories; using `>=` would fail data exactly at a documented maximum.
+- **Limit:** The 5% default is an illustrative policy, not a statistically derived
+  or universally acceptable amount of missing data.
+
+## D014 — Keep identity and predictor overlap separate
+
+- **Date:** 2026-09-17
+- **Status:** Accepted
+- **Decision:** ID columns form a composite tuple. Duplicate occurrences after
+  the first and matching reference rows have separate measurements. Missing ID
+  rows are excluded and reported; they cannot produce a fully clean ID result.
+  Predictor matches exclude IDs/target and warn instead of failing automatically.
+- **Reason:** Two customers can share all recorded attributes. Structured keys
+  avoid delimiter collisions, and Decimal numeric keys avoid float rounding of
+  distinct numerical text values. No Python hash is treated as proof of equality.
+- **Alternatives:** Fuzzy matching adds similarity thresholds and false positives;
+  making every predictor match a failure would overstate evidence of contamination.
+- **Observed:** The Telco split had 10 matching reference predictor rows and zero
+  overlapping IDs; an independent pandas merge confirmed this distinction.
+
+## D015 — Use bounded, explainable leakage heuristics
+
+- **Date:** 2026-09-17
+- **Status:** Accepted
+- **Decision:** Prohibited feature presence fails its explicit policy. Exact
+  two-value target copies, inversions, and recodings warn. Scan unexpected
+  features too, excluding target and ID roles. Require at least 20 comparable
+  rows, 80% coverage, and both target classes; report inadequate evidence clearly.
+- **Reason:** This catches simple suspicious relationships without fitting another
+  predictive model or confusing unique IDs with a target-derived feature.
+- **Alternatives:** A single-feature classifier could identify more complex
+  relationships but needs separate split/scoring rules; broad correlation rules
+  can miss categorical recodings and introduce arbitrary cutoffs.
+- **Limits:** Minimum size/coverage are safeguards, not significance tests. Noisy,
+  high-cardinality, multi-feature, temporal, or externally introduced leakage may
+  pass. A legitimate binary predictor may warn. Neither outcome proves leakage
+  or its absence.
+
+## D016 — Make unevaluated checks visible
+
+- **Date:** 2026-09-17
+- **Status:** Accepted
+- **Decision:** A missing prerequisite produces WARNING with `evaluated=false`
+  and a reason. Structural schema problems fail independently. Unavailable
+  measurements are null, not zero. No overall status is computed in Phase 2.
+- **Reason:** A blocked check cannot be mistaken for successful validation.
+- **Alternatives:** A separate SKIP status is expressive but would extend the
+  requested three-status contract; silently omitting checks would hide coverage.
+- **Limit:** Unlabeled current data has an explicit unevaluated leakage warning,
+  even though absent labels are allowed by its schema.
