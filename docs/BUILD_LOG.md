@@ -42,3 +42,30 @@ backdate project activity.
 - Passed Ruff linting and formatting on the implementation.
 - Updated dataset, architecture, decision, experiment, setup, and interview docs
   with actual results and limitations. No Phase 1 commit or GitHub write yet.
+
+## 2026-09-17 — Phase 2 data validation
+
+- Received explicit Phase 2 implementation approval and verified that local and
+  remote main matched the merged Phase 1 commit `1582c28` with a clean worktree.
+- Created local branch `phase/2-data-validation`.
+- Added validated data-check settings, a shared CheckResult contract, and checks
+  for schema, target format, identifiers, segment presence, missingness, exact
+  duplicates, composite IDs, overlap, and limited target-like/prohibited features.
+- Defined strict maximum boundaries, full-row denominators, bounded evidence,
+  explicit exclusions, and unevaluated WARNING results with prerequisite reasons.
+- Added a small local JSON demonstration without implementing the Phase 6
+  validation CLI, complete YAML schema, overall status, or validation exit codes.
+- Passed 100 tests: all 34 existing tests plus 66 Phase 2 tests. Coverage includes
+  measurements, boundary equality, missing IDs, large numeric keys, recodings,
+  invalid policies, JSON output, and demonstration overwrite protection.
+- Passed Ruff linting, Ruff formatting, and dependency integrity checks. No new
+  dependencies were added.
+- Ran the checks on the original prepared split: 135 PASS, 1 WARNING, 0 FAIL;
+  all 136 checks were evaluated. The warning identified 10 reference predictor
+  matches (0.709723%) and ID overlap remained zero.
+- Independently confirmed those 10 matches with a pandas merge. Rechecked the
+  source partition hashes against Phase 1; both datasets remained unchanged.
+- Generated final local evidence at `reports/generated/phase2_verified.json`.
+  Verified that data, models, and generated reports remain ignored by Git.
+- Updated architecture, decisions, measured evidence, setup, and interview notes.
+  No Phase 2 commit or GitHub write has been made at this point.

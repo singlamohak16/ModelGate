@@ -61,3 +61,36 @@ The YAML loader remains the Phase 0 skeleton. The full YAML schema, public
 validation CLI, structured check results, and status aggregation arrive in
 later phases. Baseline metric recording here does not implement Phase 3's
 calibration, threshold analysis, or release rules.
+
+## Phase 2 check library
+
+`run_data_checks(train, reference, policy, current=None, current_labeled=False)`
+returns a flat list of validated `CheckResult` objects. It does not load models,
+fit anything, alter input frames, or aggregate an overall decision.
+
+- `results.py`: status enum, result fields, finite-JSON and unevaluated-status rules.
+- `checks/policy.py`: settings, defaults, and cross-field validation. It reuses
+  the Telco schema but accepts another explicit CSV schema within binary scope.
+- `checks/_common.py`: common blank detection, scalar conversion, prerequisites,
+  positional examples, and structured ID/predictor keys.
+- `checks/data.py`: schema, per-column missingness, row/ID duplicates, and two
+  distinct overlap checks.
+- `checks/leakage.py`: configured prohibitions and limited two-value target checks.
+- `checks/runner.py`: deterministic orchestration for each dataset and the
+  train/reference pair; independent checks continue after a reported defect.
+- `scripts/demo_data_checks.py`: a small local demonstration of the library
+  results, with overwrite protection. It is not the Phase 6 validation CLI.
+
+Use `read_csv_strings` before these checks. Phase 1's `prepare_frame` deliberately
+raises on malformed data, so using it first would prevent the checker from
+describing those defects. CSV parsing errors, including duplicate raw headers,
+remain input errors in the existing loader. Duplicate DataFrame column labels
+are a structural FAIL when the frame is passed directly to the library.
+
+Schema failures and dependency warnings are separate evidence. For example,
+missing identifiers fail schema columns and block ID overlap; predictor overlap
+can still run. Unlabeled current data has no required target; its dependent
+target-like heuristic is explicitly unevaluated rather than silently passing.
+
+The full JSON run envelope, YAML settings integration, user-facing validation
+CLI, and overall-status/exit-code policy remain later-phase work.

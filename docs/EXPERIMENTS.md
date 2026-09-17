@@ -70,3 +70,34 @@ cannot substantiate production ROI or fairness claims.
 
 The four controlled defective scenarios remain Phase 7 work. No contamination,
 leakage, drift, or segment-degradation experiment is claimed complete here.
+
+## Phase 2 — Real-data check demonstration on 2026-09-17
+
+Ran `scripts/demo_data_checks.py` on the unchanged prepared Phase 1 split using
+the default `DataCheckPolicy`: 5% maximum missingness, zero permitted duplicate
+or ID-overlap fraction, non-strict extra columns, and the documented exact
+target-like heuristic. The JSON contains 136 individual check results:
+135 PASS, 1 WARNING, 0 FAIL. All 136 were evaluated.
+
+| Measurement | Train | Reference |
+| --- | ---: | ---: |
+| Rows | 5,634 | 1,409 |
+| Missing TotalCharges | 10 | 1 |
+| Missing TotalCharges percentage | 0.177494% | 0.070972% |
+| Exact duplicate rows after first occurrence | 0 | 0 |
+| Duplicate complete IDs after first occurrence | 0 | 0 |
+
+ID overlap was zero. Predictor overlap identified 10 matching reference rows
+(10/1,409 = 0.709723%), using all 19 predictors but excluding IDs and target.
+This produced the one WARNING. A separate pandas merge against deduplicated
+training predictor rows independently produced the same count of 10. No input
+data was changed in response to this warning.
+
+Different IDs with identical predictor values do not prove either contamination
+or independence of the underlying people. The appropriate result is bounded
+evidence and an interpretation limit. No target-like two-value relationship was
+identified among the checked features; more complex leakage was not tested.
+
+The generated JSON stays local under ignored `reports/generated/`. This is a
+library demonstration, not a full audit report or release verdict. The focused
+synthetic unit tests are not the four complete controlled scenarios of Phase 7.

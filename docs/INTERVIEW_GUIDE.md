@@ -137,3 +137,103 @@ It did not publish anything. `git diff` shows tracked file changes; new files
 only appear in a full proposed commit after staging. `git add` prepares the
 snapshot without committing. Commit, push, and opening a pull request are separate
 steps requiring the project's explicit approvals. No history is rewritten.
+
+## Phase 2: what was built
+
+ModelGate now describes data problems using consistent check results. It checks
+schema, missing values, duplicate rows and IDs, train/reference overlap, and
+simple suspicious target relationships. The functions read DataFrames without
+modifying them, and independent checks continue when another reports a defect.
+
+## Phase 2 functions and flow
+
+1. `DataCheckPolicy` validates settings and column-role consistency before data
+   checks run. Its defaults reference the Telco schema; it is not the complete
+   YAML run configuration.
+2. `run_data_checks` calls schema, missingness, duplicates, and leakage checks
+   for train/reference and optional current data, then train/reference overlap.
+3. `check_schema` reports structure, columns, numerical/category rules, target
+   encoding and class counts, identifiers, and segment presence.
+4. `check_missingness` counts missing cells and applies a per-column override
+   or default. Exclusions retain their measurement but do not apply a limit.
+5. `check_duplicates` counts occurrences after the first, separately for whole
+   rows and complete composite identifier tuples.
+6. `check_overlap` counts matching reference rows, separately by identity and
+   by exact predictor tuples. Multiple training matches do not inflate the count.
+7. `check_leakage` checks prohibited feature names, then exact two-value
+   relationships to a valid binary target with adequate sample size/coverage.
+8. Helpers in `_common.py` define missingness, target tokens, blocked outcomes,
+   positional evidence, and comparison keys. `CheckResult` validates result
+   fields and forbids nonfinite JSON measurements or unevaluated PASS results.
+9. `demo_data_checks.py` demonstrates serialization locally. It does not aggregate
+   a release decision or implement the future validation CLI exit codes.
+
+## Phase 2 methods and alternatives
+
+Most checks use counts, proportions, set membership, and exact equality. A
+duplicate fraction counts repetitions after the first divided by all dataset
+rows. Overlap divides matched reference rows by all reference rows. The leakage
+test examines a two-by-two value relationship, not a p-value or causal inference.
+Two distinct feature values must map one-to-one to two target classes.
+
+The 5% missingness default and minimum leakage sample/coverage are policy choices,
+not statistical guarantees. Exact maximum equality passes; examples are bounded
+but total counts always cover the evaluated population.
+
+Alternatives include Pandera for schema checks, stopping at the first failure,
+fuzzy record matching, and a single-feature predictive model for leakage. These
+trade dependency/implementation complexity, audit completeness, and false-positive
+behavior. The selected approach keeps measurements straightforward to explain.
+
+## Phase 2 limitations and failure modes
+
+- Bad numerical text is distinct from a genuinely missing value; converting it
+  silently to missing before validation would hide the parsing defect.
+- Missing IDs are excluded from key matching and reported separately. They do
+  not establish zero overlap for those unmatchable rows.
+- Identical predictors across different IDs can be legitimate coincidences.
+- Exact matching misses modified duplicates; target recoding checks miss noisy
+  and multi-feature leakage. Legitimate strong binary features may warn.
+- A check blocked by missing columns cannot pass. Its WARNING plus the schema
+  FAIL explains why coverage is incomplete.
+- Current labels must be declared available by the caller. Unlabeled current data
+  is not assigned model-performance or degradation claims.
+- A PASS applies to one configured check. It is not proof of release readiness.
+
+## Phase 2: five interview questions
+
+1. **What is the difference between a measurement and a rule?** Missingness of
+   3% is observed data; whether it passes a 5% maximum is a configured decision.
+2. **How do you avoid double-counting overlap?** Build the set of complete
+   training keys, then count each reference row whose key belongs to that set.
+   Repeated training keys cannot inflate the numerator.
+3. **Why does predictor overlap warn instead of fail?** Different customers
+   can share all recorded attributes. Our Telco split has 10 such matches but
+   zero overlapping IDs, so matching attributes alone cannot prove contamination.
+4. **Does a target-copy warning prove leakage?** No. It detects a suspicious
+   relationship. We must investigate feature provenance and whether it would
+   have been available at the intended prediction time.
+5. **Why report unevaluated checks?** Missing prerequisites mean there is no
+   measurement. Reporting zero or PASS would falsely claim that validation ran
+   successfully. We retain a reason and `evaluated=false` instead.
+
+## Phase 2: 60-second explanation
+
+I added reusable data checks to ModelGate. Each result records a measurement,
+threshold, PASS/WARNING/FAIL status, and bounded evidence. The policy defines
+column roles and limits, while checks measure schema problems, missingness,
+duplicates, and train/reference overlap. IDs use composite tuples, and overlap
+counts each reference row once. Predictor equality warns because separate
+customers can share attributes. Leakage checks identify prohibited columns and
+exact two-value target relationships, with clear limits on what they can prove.
+If a prerequisite is missing, the dependent check is explicitly unevaluated.
+On the Telco split, 135 checks passed and one warned about 10 identical predictor
+rows across the split, with no ID overlap. I independently verified that count
+and retained the warning rather than changing the data to make every check pass.
+
+## Phase 2 understanding exercise
+
+Training IDs are `[A, A, B]`; reference IDs are `[A, A, C, missing]`. What are
+the training duplicate-ID count, the overlapping reference-row count, and the
+overlap fraction using the documented denominator? How should the missing ID
+appear in the evidence?
