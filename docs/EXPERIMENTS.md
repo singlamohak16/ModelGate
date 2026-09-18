@@ -101,3 +101,55 @@ identified among the checked features; more complex leakage was not tested.
 The generated JSON stays local under ignored `reports/generated/`. This is a
 library demonstration, not a full audit report or release verdict. The focused
 synthetic unit tests are not the four complete controlled scenarios of Phase 7.
+
+## Phase 3 — Model validation on 2026-09-17
+
+Loaded the trusted original Phase 1 pipelines without retraining. Preparation
+and artifact hashes were checked, and the same 1,409 reference rows / 374 churn
+outcomes were evaluated. No metric limits were configured: six checks per model
+were PASS as descriptive/class-support results, not model-quality approvals.
+
+| Model | Precision at 0.5 | Recall | F1 | PR-AUC | Brier |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Logistic Regression | 0.635179 | 0.521390 | 0.572687 | 0.659655 | 0.137061 |
+| Random Forest | 0.652482 | 0.491979 | 0.560976 | 0.639817 | 0.139302 |
+
+PR-AUC is trapezoidal; average precision remains separately reported
+(LR 0.660382, RF 0.640588). The classification metrics match Phase 1. Binary
+Brier was independently verified against Scikit-learn on both saved models.
+
+### Threshold grid
+
+PPR is predicted-positive rate, shown as a fraction. Counts use all 1,409 rows.
+Displayed decimals are rounded; comparisons in the library are not rounded.
+
+| Model | Threshold | Precision | Recall | F1 | PPR | TP | FP | TN | FN |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| LR | 0.30 | 0.539326 | 0.770053 | 0.634361 | 0.378992 | 288 | 246 | 789 | 86 |
+| LR | 0.40 | 0.577566 | 0.647059 | 0.610340 | 0.297374 | 242 | 177 | 858 | 132 |
+| LR | 0.50 | 0.635179 | 0.521390 | 0.572687 | 0.217885 | 195 | 112 | 923 | 179 |
+| LR | 0.60 | 0.692308 | 0.385027 | 0.494845 | 0.147622 | 144 | 64 | 971 | 230 |
+| LR | 0.70 | 0.835165 | 0.203209 | 0.326882 | 0.064585 | 76 | 15 | 1020 | 298 |
+| RF | 0.30 | 0.530214 | 0.727273 | 0.613303 | 0.364088 | 272 | 241 | 794 | 102 |
+| RF | 0.40 | 0.587500 | 0.628342 | 0.607235 | 0.283889 | 235 | 165 | 870 | 139 |
+| RF | 0.50 | 0.652482 | 0.491979 | 0.560976 | 0.200142 | 184 | 98 | 937 | 190 |
+| RF | 0.60 | 0.706522 | 0.347594 | 0.465950 | 0.130589 | 130 | 54 | 981 | 244 |
+| RF | 0.70 | 0.732759 | 0.227273 | 0.346939 | 0.082328 | 85 | 31 | 1004 | 289 |
+
+For LR, lowering the threshold from 0.50 to 0.30 caught 93 additional churners
+and produced 134 additional false positives. This is a measured tradeoff, not a
+business recommendation. No threshold was selected or called optimal.
+
+### Calibration and repeatability
+
+Both models report ten uniform bins with sample counts. LR's (0.8,0.9] bin had
+only 8 rows, and (0.9,1.0] was empty; RF's highest bin had only 13 rows. Sparse
+bins do not justify strong calibration claims. Nonempty bin means/fractions
+were independently compared with Scikit-learn's calibration curve.
+
+Two generated reports (`phase3_model_checks.json` and `phase3_repeat.json`)
+were identical, and every check validated through `CheckResult`. Reports remain
+local in ignored `reports/generated/`. Brier's small between-model difference
+is descriptive; there was no significance test, confidence interval,
+recalibration, temporal evaluation or threshold optimization. The Phase 2
+predictor-overlap warning still applies; this phase did not change the split.

@@ -94,3 +94,30 @@ target-like heuristic is explicitly unevaluated rather than silently passing.
 
 The full JSON run envelope, YAML settings integration, user-facing validation
 CLI, and overall-status/exit-code policy remain later-phase work.
+
+## Phase 3 model validation
+
+The data-check library remains independent. A caller supplies aligned labels
+and positive-class probabilities to the model-check library:
+
+`fitted pipeline + ordered predictors -> positive_probabilities -> run_model_checks`
+
+- `predictions.py` validates binary classes, selects the configured positive
+  probability column and validates both probability columns. It never fits.
+- `metrics.py` validates vectors, computes confusion counts and metrics, Brier,
+  uniform calibration bins and the five-threshold grid. Policy-free functions
+  can later be reused by segment/drift analysis without implementing those phases.
+- `checks/model.py` validates model policy and applies optional minimum metrics
+  and maximum Brier rules. Existing `CheckResult` ensures finite JSON and visible
+  unevaluated WARNINGs; the returned dictionary contains serialized checks.
+- `scripts/demo_model_checks.py` verifies prepared data and artifact provenance,
+  requires explicit local-artifact trust, evaluates both saved models and writes
+  an exclusive-create JSON demonstration. Training files are unchanged.
+
+Undefined metrics are null with reasons, distinct from legitimate zero scores.
+No-limit PASS measurements explicitly say descriptive only. Invalid vectors
+raise input errors; one observed class warns and blocks PR summaries but not
+all available measurements. The adapter requires two trained model classes.
+No threshold is optimized; no probabilities are recalibrated. The demo uses
+the fitted Phase 1 preprocessing contract and does not replace Phase 2 auditing
+of malformed data. See `MODEL_VALIDATION.md` for the complete API contract.
