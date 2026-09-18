@@ -237,3 +237,91 @@ Training IDs are `[A, A, B]`; reference IDs are `[A, A, C, missing]`. What are
 the training duplicate-ID count, the overlapping reference-row count, and the
 overlap fraction using the documented denominator? How should the missing ID
 appear in the evidence?
+# Phase 3 interview readiness
+
+## Plain-language explanation
+
+I added a way to evaluate a saved churn model without retraining it. It reports
+correct predictions, missed churners, false alarms, probability error and how
+those outcomes change across five decision thresholds. It preserves evidence
+when a metric cannot be calculated instead of pretending it passed.
+
+## Technical explanation
+
+`positive_probabilities` maps fitted `classes_` to the configured positive label
+and validates the probability matrix. The metric functions compute confusion
+counts, classification metrics, PR summaries, Brier and calibration bins.
+`run_model_checks` applies an independently validated policy and creates existing
+`CheckResult` objects before serializing them. The demo verifies data/model
+fingerprints, loads trusted artifacts, evaluates both models and writes JSON.
+It never fits preprocessing or a classifier on reference data.
+
+The smaller helpers have explicit jobs: `label_token` validates/canonicalizes
+supported label representations; `validate_labels` checks the two-class contract;
+`validate_fraction` validates probability thresholds; `validate_inputs` checks
+alignment/ranges and encodes outcomes. `_classification` converts thresholded
+probabilities to TP/FP/TN/FN. The public helpers add PR summaries, Brier or bins.
+
+## Statistics and design reasoning
+
+Precision is TP/(TP+FP); recall is TP/(TP+FN); F1 is 2TP/(2TP+FP+FN).
+Predicted-positive rate is (TP+FP)/N, distinct from prevalence (TP+FN)/N.
+PR-AUC describes ranking across thresholds, whereas F1 describes a selected
+operating threshold. Trapezoidal PR area and average precision use different
+integration conventions, so both are labeled explicitly.
+
+Brier averages (p-y)^2. Predicting 0.8 when the outcome is 1 contributes 0.04;
+predicting 0.8 when the outcome is 0 contributes 0.64. Calibration asks whether
+groups assigned similar probabilities show similar observed event rates.
+Brier also reflects discrimination and uncertainty; it is not pure calibration.
+
+Manual confusion counts are small and explainable, and independent Scikit-learn
+comparisons guard correctness. Equal-width bins preserve interpretable ranges;
+quantile bins would balance counts but change those ranges. Zero-division
+fallbacks would simplify numbers but hide undefined evidence. Automatic
+threshold selection would need a separate tuning set and an explicit objective.
+
+## Limitations and failure modes
+
+One split cannot establish generalization, causal value or business savings.
+Sparse calibration bins are unstable. Repeatedly choosing settings based on the
+reference set would turn it into tuning data. Misaligned arrays can produce
+plausible but wrong metrics. A model's probability column order may differ from
+assumptions, which is why `classes_` is checked. Fingerprints do not make an
+untrusted joblib artifact safe. No-limit PASS means descriptive only.
+
+## Five interview questions
+
+1. **Why not rely on accuracy?** It can conceal missed churners under imbalance.
+   Precision/recall expose false-alarm and missed-positive tradeoffs.
+2. **Does lower Brier prove better calibration?** No. It measures overall
+   probability error and also reflects discrimination and outcome uncertainty.
+3. **What happens when no positives are predicted?** Precision is undefined and
+   reported as null with a warning. If actual positives exist, recall and F1
+   genuinely equal zero.
+4. **Why not choose threshold 0.30 from this table?** It is an observed operating
+   point, not an optimized deployment choice. Selection needs costs/objectives,
+   tuning data and an untouched evaluation set.
+5. **How do you trust the computations?** Small hand-calculated fixtures,
+   Scikit-learn agreement, boundary/invalid-input tests, real-pipeline integration,
+   unchanged fingerprints and identical repeated local reports.
+
+## 60-second explanation
+
+ModelGate evaluates saved binary churn models offline. In Phase 3 I added
+precision, recall, F1, PR-AUC, confusion counts and probability evaluation using
+Brier score and calibration bins. It evaluates five thresholds, exposing the
+tradeoff between catching churners and generating false alarms. I select the
+positive probability column from the model's class labels and keep undefined
+metrics as explicit warnings. Rules are configurable, separate from measurement,
+and there are no invented default quality limits. I tested the calculations
+against Scikit-learn and evaluated both existing pipelines on the unchanged
+reference data. Logistic Regression's Brier was about 0.1371 and Random Forest's
+about 0.1393. These are single-split observations, not deployment approval or
+proof that either model is better calibrated.
+
+## Understanding exercise
+
+For labels `[0,0,1,1]` and probabilities `[0.1,0.4,0.35,0.8]`, calculate TP,
+FP, TN, FN, precision and recall at thresholds 0.50 and 0.30. Which errors
+increase when the threshold drops? Does Brier change, and why?

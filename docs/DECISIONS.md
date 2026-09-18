@@ -212,3 +212,62 @@
   requested three-status contract; silently omitting checks would hide coverage.
 - **Limit:** Unlabeled current data has an explicit unevaluated leakage warning,
   even though absent labels are allowed by its schema.
+
+## D017 — Separate model measurement from configured decisions
+
+- **Date:** 2026-09-17
+- **Status:** Accepted
+- **Decision:** Pure metric helpers plus a model-check policy; no default quality
+  limits. Retain trapezoidal PR-AUC and separately named average precision.
+  Minimum checks use >=, maximum Brier uses <=, without rounding/tolerance.
+- **Reason:** Requirements should not be invented or tuned to make a baseline
+  pass. Measurements can later serve segments without duplicating the formulas.
+- **Alternatives:** Hard-coded quality limits hide assumptions; replacing Phase 1
+  helpers would needlessly alter its recorded undefined-metric convention.
+- **Limit:** Descriptive PASS needs its `applied=false` evidence and message to
+  prevent misinterpretation. No overall release judgment exists.
+
+## D018 — Explicit nulls and binary prediction contracts
+
+- **Date:** 2026-09-17
+- **Status:** Accepted
+- **Decision:** Undefined metrics return null plus reasons and unevaluated
+  WARNINGs. One observed class warns and withholds PR summaries. Select the
+  positive column from two fitted `classes_`, validate the entire probability
+  matrix, reject scores/booleans/nonfinite values and require row sums near one.
+- **Reason:** Undefined precision is not the same as precision zero. Column 1
+  is not necessarily the positive class; silent clipping hides upstream defects.
+- **Alternatives:** Scikit-learn's zero-division fallback is convenient but can
+  mislead policy evaluation; automatically applying a sigmoid assumes a score
+  scale that the toolkit cannot justify.
+- **Limit:** Generic arrays have no row identities. The caller must preserve
+  alignment; matching Series indexes only catches some ordering mistakes.
+
+## D019 — Descriptive calibration and threshold analysis
+
+- **Date:** 2026-09-17
+- **Status:** Accepted
+- **Decision:** Binary Brier on [0,1], ten equal-width calibration bins with
+  explicit empty bins, and threshold grid 0.30/0.40/0.50/0.60/0.70 using >=.
+  Match Scikit-learn binning and test its nonempty values directly.
+- **Reason:** Small, explainable formulas and counts expose the evidence. Brier
+  measures probability error, not calibration alone. Counts show sparse bins.
+- **Alternatives:** Quantile bins balance counts but change probability ranges;
+  threshold optimization or recalibration would require separate tuning data
+  and an objective. Neither is implemented.
+- **Limit:** Single-split estimates, binning sensitivity, no uncertainty bounds,
+  no business-cost estimate and no guarantee of future performance.
+
+## D020 — Preserve local artifact trust and provenance
+
+- **Date:** 2026-09-17
+- **Status:** Accepted
+- **Decision:** Demo requires `--trust-local-models`, verifies both artifact
+  hashes before loading either, matches training/preparation manifests, records
+  evaluation versions and never overwrites an output report.
+- **Reason:** joblib can execute code. A fingerprint detects changed bytes, not
+  trustworthiness. The phase uses existing trusted local artifacts without fitting.
+- **Alternatives:** Retraining inside evaluation blurs responsibilities; a safer
+  serialization format may be useful later but adds scope and dependencies.
+- **Limit:** A malicious artifact plus a matching malicious manifest remains
+  unsafe. The library helper's caller is responsible for establishing trust.

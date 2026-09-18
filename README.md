@@ -8,6 +8,8 @@ The project is being built incrementally. Phase 1 provides reproducible IBM
 Telco data preparation and Logistic Regression / Random Forest baselines.
 Phase 2 adds a library of evidence-based data checks for schema, missingness,
 duplicates, train/reference overlap, and limited leakage heuristics.
+Phase 3 adds model metrics, Brier score, calibration bins, threshold analysis,
+and optional model-quality rules for fitted binary classifiers.
 It does **not** yet provide the general validation engine or
 `modelgate validate` command.
 
@@ -112,11 +114,32 @@ predictors match training rows. There was zero identifier overlap. Identical
 attributes can belong to different customers; the warning is not proof of
 contamination or a reason to modify the split.
 
+## Run the Phase 3 model-check demonstration
+
+After the existing preparation and training steps:
+
+```powershell
+.venv\Scripts\python scripts/demo_model_checks.py --trust-local-models
+```
+
+Use the trust flag only for artifacts from your own trusted local training run;
+joblib loading can execute code. The demonstration checks dataset and artifact
+fingerprints, evaluates both saved pipelines without fitting, and writes ignored
+`reports/generated/phase3_model_checks.json`. Choose a fresh `--output` on reruns.
+
+On the unchanged 1,409-row reference split, Brier scores were **0.137061** for
+Logistic Regression and **0.139302** for Random Forest. Ten calibration bins and
+the five thresholds 0.30–0.70 are included. No quality limits are configured in
+this descriptive demo: its PASS measurements do not imply release approval.
+Brier is probability error, not a pure measure of calibration. See
+[model validation](docs/MODEL_VALIDATION.md) for APIs, rules, edge cases and limits.
+
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Dataset source and schema](docs/DATASET.md)
 - [Data validation rules and evidence](docs/DATA_VALIDATION.md)
+- [Model validation and threshold analysis](docs/MODEL_VALIDATION.md)
 - [Decisions](docs/DECISIONS.md)
 - [Build log](docs/BUILD_LOG.md)
 - [Experiments](docs/EXPERIMENTS.md)

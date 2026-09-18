@@ -69,3 +69,36 @@ backdate project activity.
   Verified that data, models, and generated reports remain ignored by Git.
 - Updated architecture, decisions, measured evidence, setup, and interview notes.
   No Phase 2 commit or GitHub write has been made at this point.
+
+## 2026-09-17 — Phase 3 model validation
+
+- Received explicit Phase 3 implementation approval after presenting its proposal.
+  Verified clean main against fetched origin/main at merged Phase 2 commit
+  `2189ba9` and created local branch `phase/3-model-validation`.
+- Added validated binary probability extraction using fitted class ordering,
+  policy-independent classification/Brier/calibration/threshold helpers, and
+  six evidence-based checks per model with optional quality limits.
+- Kept undefined metrics as null plus explicit reasons and WARNING status.
+  Documented one-class behavior, array alignment, strict threshold comparisons,
+  descriptive PASS semantics and Brier's limitations as a calibration measure.
+- Added a trusted-local-model demonstration that checks dataset/training
+  manifests and both artifact hashes, does not fit anything, records provenance
+  and protects existing reports. No new dependencies or training-code changes.
+- Evaluated both existing pipelines on the unchanged 1,409-row reference split.
+  Classification measurements matched Phase 1. Brier was 0.13706126432822094
+  for Logistic Regression and 0.13930202436298936 for Random Forest.
+- Generated `reports/generated/phase3_model_checks.json` and
+  `reports/generated/phase3_repeat.json`; the two report contents were identical.
+  All 12 checks were evaluated PASS with no configured model-quality limits
+  (ten descriptive metric results and two class-support checks).
+- Independently checked real-data Brier and nonempty calibration bins against
+  Scikit-learn. Recorded the full threshold grid in the experiments document.
+- Passed 171 tests (100 existing plus 71 new), Ruff linting and formatting, and
+  dependency integrity checks. Tests cover hand counts, Scikit-learn agreement,
+  positive-label direction, invalid inputs, policy boundaries, JSON, trusted
+  artifact integration, repeatability and overwrite protection.
+- Corrected an initial boundary fixture to avoid using a rounded decimal Brier
+  limit as an exact floating-point equality; production comparisons remain
+  strict and unrounded. No tolerance was added to make a rule pass.
+- Updated README, architecture, decisions, measured experiments, model-validation
+  guide and interview notes. No Phase 4 work or Phase 3 commit/push performed.
