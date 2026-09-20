@@ -121,3 +121,28 @@ all available measurements. The adapter requires two trained model classes.
 No threshold is optimized; no probabilities are recalibrated. The demo uses
 the fitted Phase 1 preprocessing contract and does not replace Phase 2 auditing
 of malformed data. See `MODEL_VALIDATION.md` for the complete API contract.
+
+## Phase 4 segment validation
+
+`ordered reference labels + positive probabilities + one segment column`
+feed `analyze_segments`, then `run_segment_checks` applies an independent policy.
+
+- `segments.py`: alignment and string-category validation, overall measurements,
+  observed-group masks, size eligibility, class counts/prevalence, Phase 3 group
+  metrics, per-metric best candidates/ties, signed differences and row coverage.
+- `checks/segment.py`: validated settings and existing `CheckResult` creation for
+  completeness, comparison support, sample size, class support and optional
+  minimum precision/recall/F1/PR-AUC. Returns serialized checks with the evidence.
+- `scripts/demo_segment_checks.py`: verifies trusted local data/artifacts,
+  predicts once per model, runs Contract checks and exclusively creates JSON.
+  No changes were needed in existing model training or Phase 3 metric code.
+
+Small groups retain counts/prevalence but no performance measurements; missing
+segment rows remain in overall metrics and are counted explicitly. Best values
+are metric-specific and exclude small/undefined results. A single candidate's
+self-gap is not evidence of parity, so comparison support warns independently.
+Each group's rule is identified by `check_id` plus `evidence.segment`.
+
+Data checks, model checks and segment checks remain separate library APIs. Their
+integration into full YAML, one CLI and an overall audit status belongs to Phase 6.
+No Phase 5 drift or Phase 7 experiment framework was introduced.

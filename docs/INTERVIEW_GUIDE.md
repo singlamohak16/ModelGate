@@ -325,3 +325,97 @@ proof that either model is better calibrated.
 For labels `[0,0,1,1]` and probabilities `[0.1,0.4,0.35,0.8]`, calculate TP,
 FP, TN, FN, precision and recall at thresholds 0.50 and 0.30. Which errors
 increase when the threshold drops? Does Brier change, and why?
+
+## Phase 4: Segment validation
+
+### Plain-language explanation
+
+The toolkit now asks whether a model performs differently for customers with
+different contract types. It keeps the same saved predictions and threshold,
+reports each group's errors and compares them with the pooled result. Small
+groups and unavailable measurements are marked explicitly rather than silently
+treated as successful checks.
+
+### Main functions and data flow
+
+- `_segment_values` validates string categories and represents genuinely missing
+  values internally without colliding with real names such as 'missing'.
+- `analyze_segments` validates vector alignment, reuses Phase 3 label encoding,
+  computes pooled metrics, groups by positional masks, checks sample eligibility,
+  calls the existing classification helper and computes metric-specific best
+  values and differences. It returns coverage and reasons for unavailable gaps.
+- `SegmentCheckPolicy` validates column roles, positive label, a common decision
+  threshold, minimum row count and optional common quality limits.
+- `run_segment_checks` validates DataFrame structure and uses `CheckResult` for
+  completeness, comparison support, size, class support and metric decisions.
+  A nested `add` helper centralizes that result contract, not statistical logic.
+- The demo verifies provenance before loading trusted saved models, extracts
+  positive probabilities and writes a protected local JSON result. No fitting.
+
+### Statistics and rationale
+
+Reuse TP/FP/TN/FN-based metrics, positive prevalence and trapezoidal PR-AUC from
+Phase 3. Compute overall metrics directly over all rows: subgroup F1 values
+cannot generally be averaged to reproduce overall F1. Report signed differences
+in metric units; -0.10 recall means ten percentage points, not ten percent lower.
+Best candidates are selected per metric, excluding small or undefined groups.
+
+The default minimum of 50 is an illustrative reporting safeguard, not a
+significance test or a guarantee of reliable estimates. Positive/negative counts
+remain visible. A group with nine positives has limited recall evidence even
+when it contains hundreds of total rows. Prevalence differences also affect
+precision and PR-AUC, so cross-group gaps need context.
+
+### Alternatives and limits
+
+Displaying all small-group metrics gives more detail but invites overconfidence;
+the current choice withholds them and reports support. Bootstrap confidence
+intervals could quantify uncertainty but need additional methodological choices.
+Different group thresholds could change errors but would constitute a new
+decision policy requiring separate tuning and justification. They are not used.
+
+One column does not capture intersectional groups, and no causal or fairness
+claim follows. Missing groups are counted and remain in the overall denominator.
+Unaligned arrays can still pair wrong labels/predictions; index checks cannot
+establish identity for plain arrays. No default quality requirements are invented:
+descriptive PASS is not approval. No automatic retraining or deployment occurs.
+
+### Five likely interview questions
+
+1. **Why evaluate segments if overall recall looks reasonable?** Overall recall
+   can hide complete failure on a smaller group; our synthetic fixture has
+   overall recall 0.80 but one group's recall zero.
+2. **Why not average segment F1 scores?** F1 is nonlinear. Compute pooled counts
+   first and calculate overall F1 from those counts.
+3. **What does a zero best-segment gap prove?** Only that the observed value equals
+   the highest eligible value. With one candidate it is a self-comparison, and
+   even with several it is not a significance or fairness conclusion.
+4. **Why can PR-AUC exist when precision at 0.50 is undefined?** PR-AUC uses the
+   full probability ranking across thresholds. Precision at 0.50 needs at least
+   one positive prediction at that particular threshold.
+5. **What did the real evaluation show?** Both models predicted no churners in
+   one-year and two-year groups at 0.50. Their recall/F1 were zero and precision
+   undefined. These groups had 36 and nine actual churners; the result is
+   descriptive and needs prevalence/sample context, not a fairness verdict.
+
+### 60-second explanation
+
+In Phase 4 I added segment validation to ModelGate using customer contract type.
+It evaluates existing predictions at one shared threshold and reports group
+counts, prevalence, precision, recall, F1 and PR-AUC. Each group is compared with
+overall performance and the best eligible group for that metric. Small groups
+are warned about, missing segment rows stay visible, and undefined metrics are
+not replaced by misleading zeros. Optional quality limits use the same rules
+for all eligible groups. On our reference split, both baseline models had zero
+recall for one-year and two-year contracts at threshold 0.50, which the overall
+scores alone did not reveal. I verified the group calculations against
+Scikit-learn and tested a synthetic case where overall recall passes a limit but
+a segment fails. This is performance evidence, not proof of fairness or a
+deployment decision.
+
+### Understanding exercise
+
+Group A has 40 actual churners and catches all 40. Group B has ten actual
+churners and catches none. What are overall recall and each group's recall?
+With an illustrative minimum recall of 0.75 and sufficient group sizes, which
+segment rule fails? Why does overall recall alone hide the issue?

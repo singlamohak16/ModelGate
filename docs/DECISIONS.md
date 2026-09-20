@@ -271,3 +271,52 @@
   serialization format may be useful later but adds scope and dependencies.
 - **Limit:** A malicious artifact plus a matching malicious manifest remains
   unsafe. The library helper's caller is responsible for establishing trust.
+
+## D021 — Reuse pooled binary metrics for one-column segments
+
+- **Date:** 2026-09-19
+- **Status:** Accepted
+- **Decision:** Compute group metrics with Phase 3's existing helpers and one
+  shared threshold; compute overall metrics directly from all rows. Compare
+  precision/recall/F1/PR-AUC via signed segment-minus-comparator differences.
+- **Reason:** Averaging segment F1 or PR-AUC need not reproduce pooled results.
+  One shared operating point keeps comparisons interpretable.
+- **Alternatives:** Separate group models/thresholds require a new decision policy
+  and tuning data; relative gaps are unstable when the denominator is near zero.
+- **Limit:** Gaps are descriptive and group prevalence/difficulty can differ;
+  no causal, significance or fairness claim follows.
+
+## D022 — Explicit sample, class and comparison support
+
+- **Date:** 2026-09-19
+- **Status:** Accepted
+- **Decision:** Default minimum 50 rows, configurable as a positive integer.
+  Below minimum, retain counts/prevalence but withhold performance with WARNINGs.
+  Use only size-eligible, metric-defined groups for each best comparison and
+  retain all exact ties. Warn when fewer than two candidates exist for a metric.
+- **Reason:** A tiny perfect group should not become a benchmark, and a zero
+  self-gap should not look like evidence that groups perform equally well.
+- **Alternatives:** Displaying all small-group metrics increases available detail
+  but risks overinterpretation; bootstrap intervals could quantify uncertainty
+  but require additional statistical choices outside this phase.
+- **Limit:** Fifty rows is illustrative, not a statistical guarantee. Few positive
+  outcomes can remain even in large groups; counts and class-support warnings
+  do not replace uncertainty estimates.
+
+## D023 — Preserve missing-group coverage and optional requirements
+
+- **Date:** 2026-09-19
+- **Status:** Accepted
+- **Decision:** Missing/blank segment values fail completeness and stay in the
+  overall denominator, but not named comparisons. Accept string categories
+  without trimming nonblank names; no sentinel-string bucket or silent coercion.
+  Apply optional shared minimum metrics, with strict unrounded comparisons and
+  equality passing. Defaults remain descriptive, not invented quality requirements.
+- **Reason:** Silently dropping rows changes the evaluation population. A literal
+  category called 'missing' must not collide with actual missing values.
+- **Alternatives:** A separate missing-value group can be informative, but would
+  conflate completeness defects with meaningful segment definitions; per-group
+  quality overrides increase policy complexity without a current requirement.
+- **Limit:** Numeric category codes require explicit conversion to intended string
+  labels. Gap measurements do not themselves trigger failure. Unconfigured zero
+  recall can be a descriptive PASS, so messages and applied flags matter.
