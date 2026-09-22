@@ -320,3 +320,71 @@
 - **Limit:** Numeric category codes require explicit conversion to intended string
   labels. Gap measurements do not themselves trigger failure. Unconfigured zero
   recall can be a descriptive PASS, so messages and applied flags matter.
+
+## D024 — Descriptive distribution distances, not p-value gates
+
+- **Date:** 2026-09-22
+- **Status:** Accepted
+- **Decision:** Numerical features and positive probabilities use the maximum
+  empirical CDF gap (KS). Compute it directly with sorting/searchsorted and test
+  against SciPy. Categorical features use SciPy's base-2 Jensen-Shannon distance.
+- **Reason:** The required statistic is small and explainable. Computing unused
+  p-values would invite unsupported significance claims, especially with ties,
+  dependence and many comparisons. Distance is not performance degradation.
+- **Alternatives:** P-value gates depend heavily on sample size and assumptions;
+  Wasserstein has feature units and PSI introduces binning choices. Multivariate
+  methods can capture interactions but add scope.
+- **Limit:** Thresholds remain policy choices, not universal constants. Univariate
+  distances may miss changed feature relationships; no temporal claim follows.
+
+## D025 — Uniform-mixture smoothing and visible coverage
+
+- **Date:** 2026-09-22
+- **Status:** Accepted
+- **Decision:** Union categorical support, typed missing bucket, and smoothed
+  fraction `(1-epsilon)*p + epsilon/K`, default epsilon=1e-6, allowed [0,1).
+  Record bounded examples and counts. Numeric missing values are excluded with
+  coverage; invalid observations block rather than silently disappear.
+- **Reason:** New categories remain measurable, literal names cannot collide
+  with missing, and equal proportions at unequal sample sizes remain equal.
+- **Alternatives:** Fixed pseudocounts affect unequal-sized samples differently;
+  no smoothing is mathematically valid for Jensen-Shannon and remains supported
+  with epsilon zero. Dropping categorical missing values hides distribution change.
+- **Limit:** Large smoothing masks differences; all-missing categorical pairs can
+  have distance zero. Numeric KS cannot detect missingness changes by itself.
+  Minimum sample size 50 is illustrative support, not statistical assurance.
+
+## D026 — Explicit labeled mode and direction-aware deterioration
+
+- **Date:** 2026-09-22
+- **Status:** Accepted
+- **Decision:** Unlabeled mode returns no performance measurements/checks. An
+  explicit true label flag validates both samples and compares same-threshold
+  Phase 3 metrics. Positive deterioration means reference-current for precision/
+  recall/F1/PR-AUC and current-reference for Brier. Improvements remain negative.
+  Optional drift-limit exceedance WARNINGs; optional deterioration-limit
+  exceedance FAILs. Equality passes and default limits remain unset.
+- **Reason:** Drift is distribution evidence, not proof of worse predictions.
+  Brier has the opposite quality direction. Missing/invalid declared labels
+  must not silently switch the requested evaluation to unlabeled mode.
+- **Alternatives:** Inferring label availability from a column name can evaluate
+  placeholders; relative percentage changes are unstable near zero. Confidence
+  intervals could quantify uncertainty but require additional methodology.
+- **Limit:** Observed performance changes may reflect population or label-process
+  differences and sampling noise. No causal or significance claim is made.
+
+## D027 — Honest self-comparison controls and direct SciPy declaration
+
+- **Date:** 2026-09-22
+- **Status:** Accepted
+- **Decision:** The demo explicitly compares reference against an exact copy,
+  records 100% overlap and exercises labeled/unlabeled paths. Small invented
+  shifted fixtures test detection separately. Declare `scipy>=1.11,<2` directly
+  because runtime categorical calculations now import it; keep installed 1.18.1.
+- **Reason:** No separate real current dataset was supplied; a software control
+  must not be sold as new temporal or production evidence. Direct imports should
+  not depend on another library continuing to install their dependencies.
+- **Alternatives:** Acquiring another dataset needs approval and schema/domain
+  decisions; generating a full scenario suite belongs to Phase 7.
+- **Limit:** Control passes establish implementation behavior, not generalization
+  or real-world stability. Full configuration/CLI integration remains Phase 6.

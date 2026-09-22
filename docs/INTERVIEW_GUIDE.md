@@ -419,3 +419,101 @@ Group A has 40 actual churners and catches all 40. Group B has ten actual
 churners and catches none. What are overall recall and each group's recall?
 With an illustrative minimum recall of 0.75 and sufficient group sizes, which
 segment rule fails? Why does overall recall alone hide the issue?
+
+## Phase 5: Drift and labeled performance changes
+
+### Plain-language explanation
+
+I added checks for whether new inputs or predicted probabilities look different
+from a reference population. When true outcomes are available, the toolkit also
+compares actual predictive performance. It never treats changed inputs alone as
+proof that the model got worse.
+
+### Functions and data flow
+
+`finite_vector` and `probability_vector` reject invalid measurement vectors.
+`numerical_sample` distinguishes missing from invalid observations and reports
+usable coverage. `ks_distance` sorts values and compares empirical cumulative
+fractions at their pooled distinct values. `categorical_sample` uses typed keys
+so actual missing values cannot collide with a real name. `categorical_distance`
+builds a union support, smooths proportions and calls SciPy's base-2 distance.
+
+`DriftCheckPolicy` validates disjoint feature/target/ID roles and limits;
+`run_drift_checks` produces independent feature and probability results using
+`drift_result` to centralize statuses/evidence. A blocked feature does not stop
+the rest. `PerformanceChangePolicy` defines label/threshold/change requirements;
+`run_performance_checks` gates on explicit label availability before touching
+labels, reuses Phase 3 measurements and checks direction-aware deterioration.
+The demo verifies provenance and uses trusted saved models, not retraining.
+
+### Statistics and design reasoning
+
+An empirical CDF is the fraction of observations at or below a value. KS finds
+the largest absolute difference between two such fractions. It detects more
+than mean shifts, but one feature at a time cannot capture every joint change.
+The code computes the statistic directly and tests against SciPy; it does not
+compute or threshold inferential p-values.
+
+Jensen-Shannon distance compares aligned category proportions. It is the square
+root of a symmetric average KL divergence to their midpoint. Base 2 gives a
+0–1 scale. Our tiny uniform-mixture smoothing is `(1-epsilon)*p + epsilon/K`.
+It preserves equality of equal proportions at unequal sample sizes; fixed
+pseudocounts would affect small/large samples differently. This smoothing is a
+documented convention, not required to make zero categories mathematically valid.
+
+For higher-is-better metrics, deterioration is reference minus current. For
+Brier, deterioration is current minus reference. An improvement is negative.
+Raw difference is always current minus reference. Limits are absolute metric
+units, not percent-relative changes, and equality passes.
+
+### Alternatives and limitations
+
+P-value gates can react to tiny changes in large samples and need assumptions
+about independence/continuity and multiple comparisons. Wasserstein distances
+retain numerical units; PSI needs bin choices. Multivariate methods can detect
+changed feature relationships but add scope. Confidence intervals for metric
+differences would require additional choices and are not implemented.
+
+Missing numerical values are excluded, so inspect counts/coverage and Phase 2
+missingness checks. An all-missing categorical pair can have zero distance but
+bad data quality. Larger smoothing suppresses differences. Fifty observations is
+not a reliability guarantee. Drift can be harmless; performance can worsen
+without marginal feature drift. Labeled differences also reflect prevalence,
+sampling and label-process changes; they do not prove a cause or significance.
+
+### Five likely interview questions
+
+1. **Does drift mean the model is worse?** No. It means a distribution changed.
+   Actual performance comparison requires outcomes and sufficient usable evidence.
+2. **What does a KS value of 0.2 mean?** At some value, empirical cumulative
+   proportions differ by 0.2; it does not mean 20% of predictions are wrong.
+3. **Why specify Jensen-Shannon distance rather than divergence?** Distance is
+   the square root of divergence. Limits depend on the definition and log base,
+   so the report records base 2 and the smoothing convention explicitly.
+4. **How do you handle Brier deterioration?** Increased Brier is worse, so use
+   current minus reference, opposite the direction for recall or F1 drops.
+5. **What evidence did this phase produce?** Explicit reference-copy controls
+   gave zero changes, unlabeled runs gave no performance claims, and invented
+   shifted/reversed-prediction fixtures triggered the intended rules. It did not
+   establish stability or degradation on a real new population.
+
+### 60-second explanation
+
+Phase 5 adds drift and performance-change checks to ModelGate. Numerical features
+and predicted probabilities use the KS statistic, while categorical features use
+base-2 Jensen-Shannon distance with a documented tiny smoothing term. Every
+result includes sample counts and thresholds, and missing or invalid inputs
+produce explicit warnings. Performance is compared only when current labels are
+declared available, using precision, recall, F1, PR-AUC and Brier score. Brier has
+the opposite deterioration direction, which is covered by tests. Since no real
+current dataset was supplied, I clearly labeled the demonstration as reference
+versus an exact copy, and tested detection with invented shifted samples. The
+tool provides evidence without claiming that drift necessarily harms performance
+or automatically deciding to retrain or deploy a model.
+
+### Understanding exercise
+
+Reference recall is 0.80 and current recall is 0.68; Brier increases from 0.14 to
+0.18. What are the two deterioration values? Which checks fail with maximum
+recall drop 0.10 and maximum Brier increase 0.05? If current labels are absent,
+which of those performance claims may the toolkit make?
