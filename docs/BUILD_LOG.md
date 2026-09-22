@@ -137,3 +137,41 @@ backdate project activity.
   experiment framework. No Phase 4 commit or GitHub write at this point.
 - Final verification: 233 tests passed again in 37.28 seconds; Ruff lint and
   formatting passed, and dependency integrity reported no broken requirements.
+
+## 2026-09-22 — Phase 5 drift validation
+
+- Received explicit Phase 5 approval after presenting the proposal. Verified
+  clean main against fetched origin/main at merged Phase 4 commit `979a346`
+  and created local branch `phase/5-drift-validation`.
+- Added numerical/prediction empirical KS, categorical base-2 Jensen-Shannon
+  distance with epsilon=1e-6 uniform-mixture smoothing, explicit numerical
+  coverage and invalid-value blocking, and collision-safe missing categories.
+- Added independent drift checks with optional warning thresholds, minimum
+  support, bounded category evidence and explicit absent-current handling.
+- Added labeled performance comparisons reusing Phase 3 metrics, direction-aware
+  deterioration limits, one-class warnings and null undefined changes. Unlabeled
+  mode returns no performance measurements or checks, even if a target exists.
+- Declared SciPy directly (`>=1.11,<2`); retained installed 1.18.1. Refreshed
+  editable metadata without updating runtime dependencies. The first no-build-
+  isolation attempt lacked setuptools; the normal isolated build succeeded using
+  the already-declared backend. No global package installation was performed.
+- Added a provenance-verified trusted-model self-copy demonstration. No real
+  current dataset was supplied: reference/current overlap is explicitly 100%.
+  Neither artifact was retrained and no new source data was downloaded.
+- Both models' labeled controls produced 27 PASS each; unlabeled controls produced
+  20 PASS each and no performance claims. All 80 drift distances and ten labeled
+  metric changes were zero, with four passing class-support checks (94 total).
+- Verified identical local control/repeat reports, all CheckResult records and
+  preserved preparation hashes. TotalCharges had one excluded missing value and
+  1,408 usable observations per reference copy; evidence retains that coverage.
+- Invented 50-row separated distributions produced numerical/prediction KS 1.0
+  and categorical distance 0.9999944064185435, exceeding illustrative 0.5 limits.
+  Reversed predictions triggered all five illustrative deterioration rules.
+  These are focused control/tests, not the Phase 7 experiment framework.
+- Passed 333 tests (233 existing plus 100 new) in 31.89 seconds, Ruff lint and
+  formatting, and dependency integrity. Tests cover SciPy agreement, smoothing,
+  support/limit boundaries, independent blocked features, new/missing categories,
+  label gating, Brier direction, improvements, provenance and overwrite protection.
+- Updated README, drift guide, architecture, decisions, measured experiments and
+  interview notes. Generated data/models/reports remain excluded from Git.
+  No Phase 6 implementation or Phase 5 commit/push at this point.

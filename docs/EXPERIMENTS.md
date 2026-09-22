@@ -223,3 +223,75 @@ weak segment fails with recall 0 while the large segment passes with recall 1.
 The weak group's overall/best recall gaps are -0.80 / -1.00. Its precision is
 undefined, warning rather than pretending to be zero. This is a focused unit
 test, not the full controlled-experiment framework reserved for Phase 7.
+
+## Phase 5 — Drift controls and focused shifted fixtures on 2026-09-22
+
+No separate current dataset was supplied. The local demo copies the existing
+1,409-row reference partition in memory, explicitly records 100% overlap, and
+evaluates both saved baselines without fitting. It repeats the checks with the
+copied target removed and `current_labeled=False`. This is a software control,
+not new, independent or temporal data and not evidence of production stability.
+
+| Model | Mode | Drift checks | Performance checks | PASS | WARNING | FAIL |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Logistic Regression | Labeled self-copy | 20 | 7 | 27 | 0 | 0 |
+| Logistic Regression | Unlabeled self-copy | 20 | 0 | 20 | 0 | 0 |
+| Random Forest | Labeled self-copy | 20 | 7 | 27 | 0 | 0 |
+| Random Forest | Unlabeled self-copy | 20 | 0 | 20 | 0 | 0 |
+
+Across four runs: 80 drift distances were exactly zero. The ten available metric
+changes were zero, and four class-support checks passed. No quality limits were
+configured. Unlabeled output contained neither per-dataset performance metrics
+nor performance checks, only explicit unavailability metadata. None of these
+94 descriptive/control PASS records establishes model quality or future stability.
+
+Numerical TotalCharges excludes the one missing reference observation in each
+copy, leaving 1,408 usable values; other numerical features have 1,409. Evidence
+retains that coverage. Categorical support includes missing buckets if observed.
+Policy minimum size is 50 and smoothing epsilon is 1e-6.
+
+`reports/generated/phase5_controls.json` and `phase5_repeat.json` were identical.
+Every check validated through the existing finite-JSON CheckResult contract.
+The demo checked prepared partition hashes, training manifest equality and both
+artifact hashes before loading either trusted model. Data/models/reports stay
+local and ignored; there was no source download or retraining.
+
+### Shifted distribution fixtures
+
+Using invented 50-row samples, not modified IBM data:
+
+| Comparison | Reference | Current | Measurement | Illustrative limit | Result |
+| --- | --- | --- | ---: | ---: | --- |
+| Numerical KS | All 0 | All 10 | 1.0 | 0.5 | WARNING |
+| Categorical distance | All A | All B | 0.9999944064 | 0.5 | WARNING |
+| Prediction KS | All 0.1 | All 0.9 | 1.0 | 0.5 | WARNING |
+
+The numerical value independently equals SciPy's KS statistic. Categorical
+distance uses base 2 and epsilon=1e-6, explaining why separated categories yield
+a value slightly below 1. With epsilon zero, the tested value is exactly 1.
+Tests also compare nontrivial smoothed vectors directly with SciPy and verify
+that identical category proportions at unequal sample sizes produce zero.
+
+### Labeled deterioration fixture
+
+For 50 alternating binary labels, reference probabilities exactly match outcomes
+and current probabilities reverse them. Common decision threshold is 0.50 and
+each illustrative maximum deterioration limit is 0.10.
+
+| Metric | Reference | Current | Deterioration | Result |
+| --- | ---: | ---: | ---: | --- |
+| Precision | 1.0 | 0.0 | 1.0 | FAIL |
+| Recall | 1.0 | 0.0 | 1.0 | FAIL |
+| F1 | 1.0 | 0.0 | 1.0 | FAIL |
+| PR-AUC, trapezoidal | 1.0 | 0.25 | 0.75 | FAIL |
+| Brier | 0.0 | 1.0 | 1.0 | FAIL |
+
+Improving the predictions instead produces negative deterioration and no failure
+under a zero maximum. Boundary equality passes; a limit just below an observed
+drop fails. Undefined precision, one-class PR-AUC, bad/missing declared labels
+and insufficient support produce warnings rather than invented measurements.
+
+These are deterministic unit/control demonstrations, not a significance study,
+causal diagnosis, real performance-loss observation or the Phase 7 experiment
+framework. The previously observed Phase 2 overlap and Phase 4 segment issues
+remain; a zero-change control does not erase those findings.

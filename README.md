@@ -12,6 +12,8 @@ Phase 3 adds model metrics, Brier score, calibration bins, threshold analysis,
 and optional model-quality rules for fitted binary classifiers.
 Phase 4 adds one-column segment evaluation, sample-size warnings, overall/best
 comparisons and optional shared segment-quality limits.
+Phase 5 adds feature/prediction drift and explicitly labeled performance-change
+checks, without inferring performance loss from unlabeled data.
 It does **not** yet provide the general validation engine or
 `modelgate validate` command.
 
@@ -153,6 +155,26 @@ precision was undefined rather than zero. Each model produced 20 PASS and
 measurements, not release approval or a fairness verdict. See
 [segment validation](docs/SEGMENT_VALIDATION.md) for rules and limitations.
 
+## Run the Phase 5 drift controls
+
+```powershell
+.venv\Scripts\python scripts/demo_drift_checks.py --trust-local-models
+```
+
+This is deliberately **reference versus an exact copy of itself**, not a new
+current dataset or temporal evaluation. Both saved models run in labeled and
+unlabeled modes. The local report is `reports/generated/phase5_controls.json`;
+choose a fresh `--output` if it exists. All 80 drift distances and ten available
+metric changes were zero; four class-support checks passed. Unlabeled mode
+produced no performance metrics or checks. These 94 descriptive/control PASS
+results do not establish real-world stability or quality approval.
+
+Invented shifted fixtures separately verify numerical KS, categorical
+Jensen-Shannon distance, prediction KS and labeled deterioration detection.
+See [drift rules, smoothing and limitations](docs/DRIFT_VALIDATION.md).
+SciPy is now a declared direct dependency; its recorded installed version remains
+1.18.1. No retraining, new data download or production monitoring was added.
+
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
@@ -160,6 +182,7 @@ measurements, not release approval or a fairness verdict. See
 - [Data validation rules and evidence](docs/DATA_VALIDATION.md)
 - [Model validation and threshold analysis](docs/MODEL_VALIDATION.md)
 - [Segment validation and comparisons](docs/SEGMENT_VALIDATION.md)
+- [Drift and labeled performance changes](docs/DRIFT_VALIDATION.md)
 - [Decisions](docs/DECISIONS.md)
 - [Build log](docs/BUILD_LOG.md)
 - [Experiments](docs/EXPERIMENTS.md)

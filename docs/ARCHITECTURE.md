@@ -146,3 +146,30 @@ Each group's rule is identified by `check_id` plus `evidence.segment`.
 Data checks, model checks and segment checks remain separate library APIs. Their
 integration into full YAML, one CLI and an overall audit status belongs to Phase 6.
 No Phase 5 drift or Phase 7 experiment framework was introduced.
+
+## Phase 5 comparisons
+
+- `drift.py`: validated finite/probability vectors, numerical usable-sample
+  profiles, direct empirical KS statistic, typed categorical support and smoothed
+  base-2 Jensen-Shannon distance. KS is cross-checked against SciPy; categorical
+  distance uses SciPy directly. No p-value is computed for rule decisions.
+- `checks/drift.py`: validates feature roles and drift policy; iterates independent
+  feature checks plus a probability check. Blocked features preserve reasons
+  without suppressing valid other features. Returns `CheckResult` objects.
+- `checks/performance.py`: explicit labeled-mode gate, same-threshold metrics on
+  both populations, signed changes, direction-aware deterioration limits and
+  class-support warnings. Returns serialized checks and descriptive measurements.
+- `scripts/demo_drift_checks.py`: verified trusted artifacts and reference-copy
+  controls in labeled/unlabeled modes. Records 100% reference/current overlap;
+  does not misrepresent copied data as a new deployment population.
+
+Prediction extraction is still the Phase 3 helper. Comparison functions accept
+probabilities and require callers to establish common model/provenance; they
+cannot prove that provenance from arrays. Series align to their own frame only,
+not across independent datasets. Optional absent current data creates explicit
+unavailable evidence. No-label mode returns no performance claims at all.
+
+Drift warnings are separate from configured labeled-deterioration failures.
+The full application-level connection among data/model/segment/drift checks and
+overall-status/exit-code decisions remains Phase 6. Small shifted tests in this
+phase are not the Phase 7 controlled-experiment framework.
