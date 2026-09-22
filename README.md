@@ -10,6 +10,8 @@ Phase 2 adds a library of evidence-based data checks for schema, missingness,
 duplicates, train/reference overlap, and limited leakage heuristics.
 Phase 3 adds model metrics, Brier score, calibration bins, threshold analysis,
 and optional model-quality rules for fitted binary classifiers.
+Phase 4 adds one-column segment evaluation, sample-size warnings, overall/best
+comparisons and optional shared segment-quality limits.
 It does **not** yet provide the general validation engine or
 `modelgate validate` command.
 
@@ -134,12 +136,30 @@ this descriptive demo: its PASS measurements do not imply release approval.
 Brier is probability error, not a pure measure of calibration. See
 [model validation](docs/MODEL_VALIDATION.md) for APIs, rules, edge cases and limits.
 
+## Run the Phase 4 segment-check demonstration
+
+```powershell
+.venv\Scripts\python scripts/demo_segment_checks.py --trust-local-models
+```
+
+This evaluates the trusted saved baselines by `Contract`, with a shared 0.50
+decision threshold and illustrative minimum segment size of 50. It writes ignored
+`reports/generated/phase4_segment_checks.json`; use a new `--output` if it exists.
+
+On the unchanged reference split, **both models had zero recall for one-year
+and two-year contracts** at 0.50. Neither predicted positives in those groups, so
+precision was undefined rather than zero. Each model produced 20 PASS and
+3 WARNING results with no configured quality limits. These are descriptive
+measurements, not release approval or a fairness verdict. See
+[segment validation](docs/SEGMENT_VALIDATION.md) for rules and limitations.
+
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Dataset source and schema](docs/DATASET.md)
 - [Data validation rules and evidence](docs/DATA_VALIDATION.md)
 - [Model validation and threshold analysis](docs/MODEL_VALIDATION.md)
+- [Segment validation and comparisons](docs/SEGMENT_VALIDATION.md)
 - [Decisions](docs/DECISIONS.md)
 - [Build log](docs/BUILD_LOG.md)
 - [Experiments](docs/EXPERIMENTS.md)

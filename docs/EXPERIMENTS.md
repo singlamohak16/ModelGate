@@ -153,3 +153,73 @@ local in ignored `reports/generated/`. Brier's small between-model difference
 is descriptive; there was no significance test, confidence interval,
 recalibration, temporal evaluation or threshold optimization. The Phase 2
 predictor-overlap warning still applies; this phase did not change the split.
+
+## Phase 4 — Contract segment evaluation on 2026-09-19
+
+Used the same trusted saved pipelines and unchanged reference partition, with
+one decision threshold 0.50 and minimum segment size 50. All three observed
+Contract groups met the size minimum and contained both outcome classes.
+No segment values were missing: named and eligible coverage were both 100%.
+
+| Contract | Rows | Churn outcomes | Non-churn outcomes | Churn prevalence |
+| --- | ---: | ---: | ---: | ---: |
+| Month-to-month | 780 | 329 | 451 | 0.421795 |
+| One year | 295 | 36 | 259 | 0.122034 |
+| Two year | 334 | 9 | 325 | 0.026946 |
+
+| Model | Contract | Precision | Recall | F1 | PR-AUC |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Logistic Regression | Month-to-month | 0.635179 | 0.592705 | 0.613208 | 0.694005 |
+| Logistic Regression | One year | undefined | 0.000000 | 0.000000 | 0.260381 |
+| Logistic Regression | Two year | undefined | 0.000000 | 0.000000 | 0.133427 |
+| Random Forest | Month-to-month | 0.652482 | 0.559271 | 0.602291 | 0.672686 |
+| Random Forest | One year | undefined | 0.000000 | 0.000000 | 0.235952 |
+| Random Forest | Two year | undefined | 0.000000 | 0.000000 | 0.125875 |
+
+PR-AUC is trapezoidal and uses continuous probabilities, so can be defined even
+when threshold 0.50 yields no positive predictions. Undefined precision is null
+with an explicit reason in JSON, not the numerical value zero.
+
+Confusion matrices use `[[TN,FP],[FN,TP]]`:
+
+- LR month-to-month: `[[339,112],[134,195]]`.
+- RF month-to-month: `[[353,98],[145,184]]`.
+- Both models, one-year: `[[259,0],[36,0]]`.
+- Both models, two-year: `[[325,0],[9,0]]`.
+
+The one-year and two-year recall gaps are -0.521390 relative to LR's overall
+recall, and -0.592705 relative to its best segment. For RF, the corresponding
+gaps are -0.491979 and -0.559271. These are absolute metric differences, not
+relative percentage changes. The month-to-month recall is above pooled recall
+by 0.071315 (LR) and 0.067292 (RF). The full JSON also contains precision/F1/
+PR-AUC differences, all best ties and candidate counts.
+
+Each model produced **20 PASS, 3 WARNING, 0 FAIL** results (23 checks). Two
+warnings are undefined precision in the one-year and two-year groups; the third
+warns that precision has only one eligible, defined comparator. A zero best-gap
+for that remaining precision candidate is not evidence of peer parity. No
+quality minima were configured, so defined zero recall/F1 are descriptive
+measurements, not policy failures or quality approvals.
+
+Independent Scikit-learn checks confirmed group confusion matrices, defined
+precision/recall/F1 and PR-AUC. Undefined precision was independently checked
+using `zero_division=np.nan` and matched the explicit null representation.
+`phase4_verified.json` and `phase4_repeat.json` were identical; all 46 check
+records validated with `CheckResult`. Prepared data hashes remained unchanged.
+The reports stay local in ignored `reports/generated/`.
+
+This evidence motivates inspecting segment performance, not automatically
+changing thresholds or claiming unfair treatment. The two-year group has only
+nine positives despite meeting the 50-row minimum, and group prevalence differs
+substantially. There are no uncertainty intervals or significance tests. No
+threshold tuning or retraining occurred; the Phase 2 overlap warning remains.
+
+### Focused synthetic detection test
+
+An invented 100-row fixture has an 80-row perfectly recalled group (40 positives)
+and a 20-row group with ten missed positives. Overall recall is 40/50 = 0.80.
+With minimum segment size 20 and an illustrative minimum recall of 0.75, the
+weak segment fails with recall 0 while the large segment passes with recall 1.
+The weak group's overall/best recall gaps are -0.80 / -1.00. Its precision is
+undefined, warning rather than pretending to be zero. This is a focused unit
+test, not the full controlled-experiment framework reserved for Phase 7.

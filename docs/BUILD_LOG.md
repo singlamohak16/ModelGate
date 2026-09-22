@@ -102,3 +102,38 @@ backdate project activity.
   strict and unrounded. No tolerance was added to make a rule pass.
 - Updated README, architecture, decisions, measured experiments, model-validation
   guide and interview notes. No Phase 4 work or Phase 3 commit/push performed.
+
+## 2026-09-19 — Phase 4 segment validation
+
+- Received explicit Phase 4 approval after presenting the segment proposal.
+  Verified clean main against fetched origin/main at merged Phase 3 commit
+  `d4460cc` and created local branch `phase/4-segment-validation`.
+- Added one-column segment analysis using existing Phase 3 metrics, signed
+  overall/best differences, exact ties, coverage and explicit missing values.
+- Added validated segment policy, illustrative minimum size 50, optional shared
+  minimum metrics and evidence-based completeness/support/quality checks.
+  Small-group performance is withheld; undefined values remain null with reasons.
+- Added a trusted-local-artifact demonstration without modifying existing
+  training/metric code or adding dependencies. No model fitting or tuning.
+- Passed the first full 233-test run (171 existing plus 62 new). Coverage includes
+  hand counts, Scikit-learn agreement, 49/50 boundaries, ties, missing groups,
+  one-class groups, undefined metrics, no comparators, invalid policy/inputs,
+  immutable inputs, strict JSON, real saved pipelines and artifact trust checks.
+- Evaluated both models by Contract on the unchanged 1,409-row reference split.
+  Groups had 780/295/334 rows and 329/36/9 churn outcomes respectively. All
+  groups met the minimum; missing segment rows were zero.
+- Both models had zero recall/F1 and undefined precision for one-year and
+  two-year contracts at threshold 0.50. Each produced 20 PASS, 3 WARNING and
+  0 FAIL with no quality limits configured. The third warning indicates only
+  one defined precision candidate, not a second quality defect.
+- Independently verified all defined group metrics and confusion matrices with
+  Scikit-learn. Its default zero fallback was inappropriate for the first
+  precision comparison; using explicit undefined handling confirmed our nulls.
+- Verified identical `reports/generated/phase4_verified.json` and
+  `reports/generated/phase4_repeat.json`, all 46 CheckResult records and unchanged
+  prepared-data hashes. Generated evidence and model/data artifacts remain local.
+- Documented actual results, prevalence and sample limitations, decisions and
+  interview explanations. No fairness guarantees, Phase 5 drift work or Phase 7
+  experiment framework. No Phase 4 commit or GitHub write at this point.
+- Final verification: 233 tests passed again in 37.28 seconds; Ruff lint and
+  formatting passed, and dependency integrity reported no broken requirements.
