@@ -1,0 +1,13 @@
+# Same default Telco policies as example.yaml; one artifact per run.
+inputs:
+  train: ../data/prepared/train.csv
+  reference: ../data/prepared/reference.csv
+  current: null
+  current_labeled: false
+artifact:
+  path: ../models/baseline/random_forest.joblib
+  trust: true  # Only for your locally trained, trusted baseline.
+  expected_sha256: null
+output: ../reports/generated/phase6_random_forest.json
+seed: 42
+decision_threshold: 0.5

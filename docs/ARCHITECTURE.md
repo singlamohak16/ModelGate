@@ -5,7 +5,7 @@
 ModelGate uses a `src` package layout so tests and users import the installed
 package rather than accidentally importing code from the repository root.
 
-The current package has two small boundaries:
+The initial package had two small boundaries:
 
 1. `modelgate.config` reads YAML safely and validates that its root is a
    string-keyed mapping.
@@ -39,7 +39,7 @@ pipeline construction, and training. The scripts are intentionally thin.
 The shared `dataset.write_json` helper enforces strict JSON; it is not yet a
 general audit-report model.
 
-## Current boundaries
+## Phase 1 boundaries
 
 The prepared CSVs still contain IDs and `Contract` for later validation, while
 model fitting receives the explicit 19 predictors. The full fitted pipeline is
@@ -57,10 +57,9 @@ Do not interpret that parent commit as containing the new training code.
 Output directories are never overwritten. A failed run may leave partial output;
 inspect it and use a new directory for retry. Data/model files remain ignored.
 
-The YAML loader remains the Phase 0 skeleton. The full YAML schema, public
-validation CLI, structured check results, and status aggregation arrive in
-later phases. Baseline metric recording here does not implement Phase 3's
-calibration, threshold analysis, or release rules.
+At Phase 1, YAML was still a mapping skeleton. Structured checks were added in
+Phases 2–5 and the full run schema/CLI arrived in Phase 6 below. Baseline metric
+recording remains separate from calibration, threshold analysis and rule checks.
 
 ## Phase 2 check library
 
@@ -92,8 +91,8 @@ missing identifiers fail schema columns and block ID overlap; predictor overlap
 can still run. Unlabeled current data has no required target; its dependent
 target-like heuristic is explicitly unevaluated rather than silently passing.
 
-The full JSON run envelope, YAML settings integration, user-facing validation
-CLI, and overall-status/exit-code policy remain later-phase work.
+Phase 6 below connects this library to YAML, the CLI, a full report envelope
+and overall-status/exit-code policy.
 
 ## Phase 3 model validation
 
@@ -144,8 +143,8 @@ self-gap is not evidence of parity, so comparison support warns independently.
 Each group's rule is identified by `check_id` plus `evidence.segment`.
 
 Data checks, model checks and segment checks remain separate library APIs. Their
-integration into full YAML, one CLI and an overall audit status belongs to Phase 6.
-No Phase 5 drift or Phase 7 experiment framework was introduced.
+integration into full YAML, one CLI and an overall audit status is in Phase 6.
+The Phase 4 implementation did not introduce drift or an experiment framework.
 
 ## Phase 5 comparisons
 
@@ -171,5 +170,42 @@ unavailable evidence. No-label mode returns no performance claims at all.
 
 Drift warnings are separate from configured labeled-deterioration failures.
 The full application-level connection among data/model/segment/drift checks and
-overall-status/exit-code decisions remains Phase 6. Small shifted tests in this
+overall-status/exit-code decisions is in Phase 6 below. Small shifted tests in this
 phase are not the Phase 7 controlled-experiment framework.
+
+## Phase 6 application boundary
+
+`CLI -> validated config -> raw data audit -> trusted fitted inference -> checks
+-> aggregate verdict -> validated JSON report -> process exit code`.
+
+- `config.py`: mapping loader plus full nested Pydantic run schema, duplicate-key
+  rejection, common role/threshold policy adapters, relative-path resolution,
+  collision guards and a fingerprint of the exact parsed YAML bytes.
+- `validation.py`: raw CSV snapshot parser, predictor-only conversion without
+  sorting/dropping rows, explicit dependency gating, one prediction per needed
+  dataset, model provenance and reuse of unchanged check calculations.
+- `reporting.py`: schema-version-1 envelope, coverage, finite JSON validation,
+  severity aggregation and exclusive output creation.
+- `cli.py` and `__main__.py`: argparse entry point shared by installed `modelgate`
+  and `python -m modelgate`. Exit 0 includes warnings, 1 indicates failed rules,
+  and 2 denotes execution failure with no completed validation verdict.
+- `configs/example.yaml` and `random_forest.yaml`: local model examples, no
+  current data invented, no default model quality limit invented.
+- `tests/test_cli_reporting.py`: focused application integration/serialization
+  tests on invented fixtures, independent of dataset downloads or stored models.
+
+The raw CLI loader intentionally differs from Phase 1's `read_csv_strings`:
+duplicate/blank headers survive to a schema FAIL instead of failing parsing.
+Ragged or unparseable CSV remains an execution error. `prepare_frame` is never
+used by validation because it sorts IDs and prematurely rejects audit defects.
+Prediction features are copies; only the already-fitted pipeline imputes/scales.
+
+Families can be evaluated, blocked, disabled or not applicable. Partial-family
+coverage retains evaluated/unevaluated counts and per-check reasons. Independent
+feature drift continues when predictions cannot be made. Unexpected execution
+exceptions stop the run, retain partial evidence where possible, and return 2.
+The writer cannot guarantee a valid report on disk failure; it never overwrites
+an existing destination. See [the full contract](CLI_REPORTING.md).
+
+No Phase 7 scenario generator, GitHub Actions, Docker or MLflow integration is
+included here. Core library functions remain independently testable.

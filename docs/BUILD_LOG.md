@@ -175,3 +175,35 @@ backdate project activity.
 - Updated README, drift guide, architecture, decisions, measured experiments and
   interview notes. Generated data/models/reports remain excluded from Git.
   No Phase 6 implementation or Phase 5 commit/push at this point.
+
+## Phase 6 — CLI and reporting (started 2026-09-27; completed 2026-10-26)
+
+- After explicit Phase 6 approval, verified clean main against origin at `a860112`
+  and created `phase/6-cli-reporting`. Initial configuration/runner/report code
+  was drafted September 27; work was interrupted before examples/tests/docs.
+  On October 26, inspected the partial state and resumed after explicit approval.
+- Added complete nested YAML validation, duplicate-key rejection, shared roles,
+  relative paths, input/output collision guards, exact parsed-config fingerprint,
+  trusted/hash-checked model snapshots, raw-data audit and row-preserving inference.
+- Added argparse installed/module entry points, coverage and partial-error reports,
+  finite schema-version-1 JSON, severity aggregation and documented exit 0/1/2.
+  Existing Phase 2–5 check calculations and training code remain unchanged.
+- Added LR/RF example configurations and 82 focused tests on invented fixtures.
+  Corrected a test's Windows newline expectation: the CSV reader appropriately
+  preserves embedded CRLF instead of silently normalizing it.
+- Refreshed the editable package with `pip install -e . --no-deps` to register
+  the console command. The declared isolated build backend was used; no new
+  runtime dependency or runtime package upgrade was introduced.
+- Verified both the module and installed CLI paths. Each real local baseline
+  produced 161 PASS, 4 WARNING, 0 FAIL and exit 0. Earlier predictor-overlap and
+  segment precision/support warnings remain visible. Current comparisons are
+  not applicable because no current dataset was supplied.
+- Validated generated reports against AuditReport and checked all recorded file
+  fingerprints. Local verified reports are `phase6_logistic_verified.json` and
+  `phase6_random_forest_verified.json` under ignored `reports/generated/`.
+  No dataset was downloaded, edited, or added to Git; models were not retrained.
+- Full suite: 415 tests passed (333 prior + 82 new); Ruff lint/format and `pip check`
+  passed. Used `-p no:cacheprovider` because the existing Windows pytest cache
+  directory denied writes; this disables only optional cache persistence.
+- Updated README, architecture, CLI contract, decisions, measured experiments and
+  interview guide. No Phase 6 commit/push/PR, no Phase 7 work or hosted CI here.

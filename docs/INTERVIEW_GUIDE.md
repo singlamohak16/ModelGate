@@ -517,3 +517,89 @@ Reference recall is 0.80 and current recall is 0.68; Brier increases from 0.14 t
 0.18. What are the two deterioration values? Which checks fail with maximum
 recall drop 0.10 and maximum Brier increase 0.05? If current labels are absent,
 which of those performance claims may the toolkit make?
+# Phase 6 — Turning check libraries into an auditable CLI
+
+## Plain-language explanation
+
+One command now reads a configuration, inspects CSVs, evaluates a trusted fitted
+model and saves a structured report. It tells the caller whether validation
+completed with no failed rules, found failures, or could not finish. The model
+is never trained during validation, and the tool never approves deployment.
+
+## Main functions and data flow
+
+`load_run_config` validates nested YAML and shared roles, resolves paths and
+records the parsed bytes' hash. `read_audit_csv` preserves literal input for
+`run_data_checks`. `prediction_features` builds an ordered copy without sorting
+rows. The runner verifies trust/hash, loads the fitted pipeline and reuses
+`positive_probabilities` across the existing model/segment/drift/performance
+checks. `aggregate_status` applies severity order; `AuditReport` validates the
+envelope; `write_report` revalidates and exclusively creates finite JSON.
+`cli.main` selects 0/1/2 and prints the report location or error.
+
+## ML/statistics concepts
+
+This phase adds orchestration, not new statistical estimators. It preserves the
+existing precision/recall/F1/trapezoidal PR-AUC, Brier, calibration bins, threshold
+grid, segments, KS and smoothed Jensen-Shannon calculations. Correct row/label
+alignment and selecting probabilities by positive-class label are prerequisites
+for meaningful metrics. Unlabeled drift cannot establish performance degradation.
+Undefined metrics remain null with reasons; missing evidence is not a zero.
+
+## Why this design; alternatives
+
+Argparse avoids a new dependency for one subcommand. Pydantic makes invalid
+configuration fail early; authoritative roles avoid conflicting policy copies.
+Raw audit before conversion preserves defects and leading-zero IDs. Reusing
+predictions prevents unnecessary work and keeps all families on the same model.
+
+Two alternatives: Typer offers richer type-driven command ergonomics but adds a
+dependency; a flat dictionary configuration is shorter initially but needs manual
+validation and can silently accept misspelled keys. A third option, fail-fast on
+every data defect, is simpler but loses valid independent evidence.
+
+## Limitations and failure modes
+
+Joblib is executable content, not a safe upload format. Hashes identify bytes,
+not trusted authors. In-memory files may be too large; separate snapshots are not
+a multi-file transaction. A configured seed does not prove training provenance.
+Unspecified quality limits produce descriptions only; a single split does not
+establish generalization, fairness or production readiness. Disk failures may
+leave partial output and no valid report; the process returns 2. Reports can
+contain local paths and example identifiers, so inspect before sharing.
+
+## Five likely interview questions
+
+1. **Why do warnings return zero?** Zero means a completed audit with no failed
+   rules, not warning-free or approved. The console/report preserve WARNING.
+2. **How is a failed check different from a failed program?** A readable CSV with
+   duplicate IDs is a completed rule failure (1). An unreadable file, broken
+   model or failed report write is an execution error (2), without a verdict.
+3. **How do you avoid row misalignment?** I audit raw frames and build an ordered
+   predictor copy preserving row order/index. No ID sorting or row removal occurs.
+4. **Why not use the training preparation function?** It sorts IDs and rejects
+   defects before audit. Validation needs those defects as reportable evidence and
+   must never refit preprocessing on evaluation data.
+5. **How do you make evidence inspectable?** The report records effective settings,
+   byte fingerprints, model identity, package versions, individual measurements,
+   thresholds, coverage and errors, with schema/exit-code consistency tests.
+
+## 60-second explanation
+
+I connected ModelGate's existing validation libraries into a configuration-driven
+CLI. It validates YAML, audits literal CSV data and evaluates one trusted fitted
+binary classifier without training. I preserve feature order and row alignment,
+select probabilities by class label and reuse them across model, calibration,
+segment and drift checks. Missing prerequisites block dependent checks while
+independent evidence remains available. Reports include fingerprints, settings,
+measurements, thresholds, warnings and coverage. Completed runs return zero for
+PASS or WARNING, one for failed rules and two for execution errors. Both Telco
+models retained four known warnings, rather than hiding them to show a clean
+pass. The implementation is tested with invented fixtures, and its output is
+evidence for human review, not an automatic production approval.
+
+## Understanding exercise
+
+A current CSV lacks one numerical predictor, but has valid labels and Contract
+values. What happens to data schema, prediction drift, categorical drift and
+the process exit code? How would the outcome change if the CSV file did not exist?
