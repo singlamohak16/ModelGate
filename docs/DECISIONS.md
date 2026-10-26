@@ -388,3 +388,52 @@
   decisions; generating a full scenario suite belongs to Phase 7.
 - **Limit:** Control passes establish implementation behavior, not generalization
   or real-world stability. Full configuration/CLI integration remains Phase 6.
+
+## D028 — One validated configuration and a small argparse CLI
+
+- **Date:** 2026-10-26
+- **Status:** Accepted
+- **Decision:** Use argparse and nested Pydantic settings. Reject unknown/duplicate
+  YAML keys. Resolve paths relative to YAML. Keep data roles/labels and the decision
+  threshold authoritative, adapting them into existing family policies. Retain
+  the low-level mapping loader for compatibility.
+- **Reason:** One subcommand does not need another runtime dependency. Independent
+  policy copies could silently disagree on the positive class or target.
+- **Alternatives:** Typer supplies rich help and type-driven commands at a dependency
+  cost; a flat configuration is initially shorter but mixes unrelated settings.
+- **Limit:** Defaults remain Telco-oriented. Validation records a seed but does not
+  establish or change an artifact's training history.
+
+## D029 — Raw audit before conversion; inference without fitting
+
+- **Date:** 2026-10-26
+- **Status:** Accepted
+- **Decision:** Parse/hash literal CSV byte snapshots, retain bad headers as schema
+  evidence, reject ragged records, and audit before predictor-only conversion.
+  Preserve row order, reuse each dataset's probabilities, and load only explicitly
+  trusted joblib bytes after optional expected-hash verification.
+- **Reason:** Phase 1 preparation sorts/rejects data and would hide defects or risk
+  label/prediction misalignment. Model load/inference exceptions are execution
+  errors, whereas invalid input columns block dependent checks only.
+- **Alternatives:** Reusing strict training preparation is shorter but loses audit
+  evidence; blindly inferring dtypes can destroy leading-zero IDs/literal NA.
+- **Limit:** All inputs are held in memory. Hashes identify content, not safety or
+  authenticity. The separate file snapshots are not a global transaction.
+
+## D030 — Separate validation verdicts from execution errors
+
+- **Date:** 2026-10-26
+- **Status:** Accepted
+- **Decision:** Aggregate FAIL > WARNING > PASS. Completed PASS/WARNING returns 0,
+  completed FAIL returns 1, execution/config/report errors return 2 with null
+  overall verdict. Use versioned finite JSON and exclusive output creation;
+  serialize/revalidate before creating the destination. Record partial evidence
+  on error when possible, with explicit coverage and warning references.
+- **Reason:** A failed rule is an audit finding, not a broken program; a warning
+  is visible evidence, not automatic rejection. Missing comparisons are not zero
+  distances. Previously generated evidence must not be silently overwritten.
+- **Alternatives:** A separate warning exit code complicates the agreed 0/1/2
+  interface; treating every exception as FAIL would confuse bugs with findings.
+  Atomic publication via temporary files could be added for stronger durability.
+- **Limit:** A write failure can leave a partial output, and invalid configuration
+  may leave no report. Return 2/stderr remains authoritative in those cases.

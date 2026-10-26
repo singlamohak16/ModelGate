@@ -295,3 +295,29 @@ These are deterministic unit/control demonstrations, not a significance study,
 causal diagnosis, real performance-loss observation or the Phase 7 experiment
 framework. The previously observed Phase 2 overlap and Phase 4 segment issues
 remain; a zero-change control does not erase those findings.
+# Phase 6 integrated CLI evidence — 2026-10-26
+
+The local fitted baselines were evaluated without refitting, on the unchanged
+5,634-row train and 1,409-row reference CSVs. No current dataset was supplied.
+
+| Model | PASS | WARNING | FAIL | Overall / exit | Reference F1 | Reference Brier |
+| --- | ---: | ---: | ---: | --- | ---: | ---: |
+| Logistic Regression | 161 | 4 | 0 | WARNING / 0 | 0.572687 | 0.137061 |
+| Random Forest | 161 | 4 | 0 | WARNING / 0 | 0.560976 | 0.139302 |
+
+Each run combines 136 data checks, 6 model checks and 23 segment checks. Four
+warnings are the known predictor-record overlap (10/1,409), undefined precision
+for one- and two-year Contract groups, and fewer than two precision comparators.
+No model quality thresholds were configured: descriptive PASS is not approval.
+Absent-current drift/performance coverage is not applicable, not zero drift.
+
+Both the module and installed command produced these results. Final local
+reports are `reports/generated/phase6_logistic_verified.json` and
+`reports/generated/phase6_random_forest_verified.json`; report schema and all
+configuration/dataset/model fingerprints were verified. They remain ignored.
+
+Invented integration fixtures verify clean PASS/0, visible WARNING/0, failed
+rules/1 and configuration/input/execution errors/2. Missing predictors block
+dependent metrics while independent data/categorical drift checks continue;
+unlabeled current data yields no labeled performance claims. These are focused
+Phase 6 tests, not the Phase 7 four-scenario experiment framework.

@@ -14,10 +14,10 @@ Phase 4 adds one-column segment evaluation, sample-size warnings, overall/best
 comparisons and optional shared segment-quality limits.
 Phase 5 adds feature/prediction drift and explicitly labeled performance-change
 checks, without inferring performance loss from unlabeled data.
-It does **not** yet provide the general validation engine or
-`modelgate validate` command.
+Phase 6 connects these checks through validated YAML, the `modelgate validate`
+command, versioned JSON reports, and explicit validation/error exit codes.
 
-ModelGate will produce evidence-based `PASS`, `WARNING`, and `FAIL` results.
+ModelGate produces evidence-based `PASS`, `WARNING`, and `FAIL` results.
 It will not automatically approve, reject, retrain, or deploy a model, and its
 checks will not guarantee the absence of leakage, bias, or production risk.
 
@@ -80,7 +80,7 @@ Output directories are protected against overwrite. For another run:
 Choose unused output directories if these already exist. A partial directory
 from an interrupted run is also protected. `--help` documents each script.
 The scripts exit 0 on success and 2 for handled input errors; they are development
-entry points, not the future validation-status CLI.
+entry points, separate from the Phase 6 validation-status CLI.
 
 ## Measured baseline results
 
@@ -109,8 +109,8 @@ This writes individual check results to ignored
 `reports/generated/phase2_data_checks.json`. Choose another `--output` path if
 the file already exists. The library API is `run_data_checks(train, reference,
 policy)`; see [Data validation](docs/DATA_VALIDATION.md) for settings and semantics.
-The complete YAML schema, public CLI, overall status, and validation exit codes
-are still Phase 6 work. The demo's success exit only means its output was written.
+The Phase 6 CLI below adds complete YAML, overall status and validation exit
+codes. This earlier demo's success exit only means its output was written.
 
 On 2026-09-17, the prepared Telco split produced **135 PASS, 1 WARNING, 0 FAIL**
 individual results. The warning identified 10 reference rows (0.7097%) whose
@@ -175,6 +175,41 @@ See [drift rules, smoothing and limitations](docs/DRIFT_VALIDATION.md).
 SciPy is now a declared direct dependency; its recorded installed version remains
 1.18.1. No retraining, new data download or production monitoring was added.
 
+## Run the Phase 6 validation CLI
+
+After local preparation/training, refresh the editable installation to register
+the command (no new runtime dependency was added):
+
+```powershell
+.venv\Scripts\python -m pip install -e . --no-deps
+.venv\Scripts\modelgate validate --config configs/example.yaml
+.venv\Scripts\modelgate validate --config configs/random_forest.yaml
+```
+
+Equivalent module entry point:
+
+```powershell
+.venv\Scripts\python -m modelgate validate --config configs/example.yaml
+```
+
+Paths inside YAML resolve relative to that YAML, not the terminal directory.
+Outputs are never overwritten: for a rerun, copy the example to an ignored
+`configs/local-*.yaml` file and change its `output` to a fresh path. The examples
+explicitly trust only your locally trained artifacts; do not load downloaded or
+untrusted joblib files. SHA256 verification does not make an artifact safe.
+
+The unchanged Telco baselines each produce **161 PASS, 4 WARNING, 0 FAIL**, overall
+WARNING and exit **0**. Warnings retain the known predictor overlap, undefined
+precision for one-/two-year contracts, and limited precision comparison support.
+No quality limit was invented to claim release readiness. Current data is absent:
+drift/performance comparison is **not applicable**, not a measured zero.
+
+Exit **0** means completed without failed rules (PASS or WARNING); **1** means
+completed with failed rules; **2** means configuration/input/execution/report-write
+error. An error report has a null overall verdict, not a new validation status.
+See [CLI, configuration and report contracts](docs/CLI_REPORTING.md).
+The four-scenario framework, CI and MLflow remain Phases 7–9.
+
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
@@ -183,6 +218,7 @@ SciPy is now a declared direct dependency; its recorded installed version remain
 - [Model validation and threshold analysis](docs/MODEL_VALIDATION.md)
 - [Segment validation and comparisons](docs/SEGMENT_VALIDATION.md)
 - [Drift and labeled performance changes](docs/DRIFT_VALIDATION.md)
+- [CLI, configuration and JSON reporting](docs/CLI_REPORTING.md)
 - [Decisions](docs/DECISIONS.md)
 - [Build log](docs/BUILD_LOG.md)
 - [Experiments](docs/EXPERIMENTS.md)
