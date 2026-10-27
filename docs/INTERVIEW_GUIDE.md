@@ -603,3 +603,98 @@ evidence for human review, not an automatic production approval.
 A current CSV lacks one numerical predictor, but has valid labels and Contract
 values. What happens to data schema, prediction drift, categorical drift and
 the process exit code? How would the outcome change if the CSV file did not exist?
+
+## Phase 7 — Controlled experiments
+
+### Plain-language explanation
+
+I built a repeatable laboratory for the validator. Starting from clean invented
+data, I deliberately contaminate the test split, copy the target into a column,
+shift a feature distribution, or damage one segment's feature relationship.
+Each case must trigger a specific finding with the correct measured evidence.
+
+### Main functions and data flow
+
+`generate_fixtures` creates independent seeded training/reference samples.
+`build_scenarios` copies frames before applying documented mutations.
+`scenario_config` declares identical thresholds for every scenario and pins each
+generated model's hash. `run_experiments` fits the existing LR/RF pipelines once
+each on clean training data, writes reproducible CSV/configs, and invokes ten
+ordinary CLI subprocesses. `assess_report` checks unique, evaluated rule results
+and their evidence rather than recomputing metrics. A manifest records mutations
+and fingerprints; a summary records each expectation and observation.
+
+### Statistics and ML concepts
+
+Negative controls establish expected behavior without the injected defect;
+positive controls establish behavior with a known defect. Keeping other fields
+unchanged isolates the intended mutation. Numerical KS compares empirical
+distributions; a complete support separation yields KS 1. Segment aggregation
+can hide a minority-group failure: 50 new false positives and 50 new false
+negatives among 1,000 balanced rows give overall F1 0.90, despite zero recall
+in the 100-row segment. These are constructed observations, not significance
+tests or real-world causal inferences.
+
+### Why this approach and alternatives
+
+The real Telco baseline already has warnings and weak contract-group recall, so
+calling it a clean negative control would be misleading. Invented fixtures make
+the exact counts and metric changes explainable. Reusing actual fitted LR/RF
+pipelines and subprocess CLI runs tests the full application boundary.
+
+Alternative one: perturb only real Telco data, which is more realistic but mixes
+new defects with known baseline issues. Alternative two: modify probability
+arrays or mock models, which is faster but bypasses CSV parsing, serialization,
+preprocessing and prediction. Direct unit tests remain useful alongside this
+more expensive integration suite.
+
+### Limitations and failure modes
+
+These easy controls cannot estimate detection or false-positive rates. Correlation
+alone is not proof of leakage; the exact two-value heuristic misses more complex
+leaks. The leaked column is audit-only, so it does not demonstrate metric
+inflation. Current is a clearly labeled synthetic copy, not temporal evidence.
+Unlabeled drift cannot establish performance loss. Different package versions
+may change artifacts or scores, and subprocess timeout/disk failures are runner
+errors rather than successful defect detection. A seed alone is not full
+reproducibility: record configuration, bytes and environment too.
+
+### Five likely interview questions
+
+1. **Why test a negative control?** Otherwise an always-failing detector could
+   appear successful. The clean case checks that rules do not alert unnecessarily
+   on this known fixture; it does not establish a population false-positive rate.
+2. **How do you prove contamination was detected correctly?** Replace exactly 20
+   reference rows with training rows, preserve the 1,000-row denominator, then
+   require ID overlap count 20, fraction 0.02 and the intended FAIL rule.
+3. **Why does the experiment runner succeed when an audit fails?** An audit FAIL/1
+   is expected for injected contamination. Runner success means actual findings
+   match expectations; missing reports and execution errors must still fail it.
+4. **How can overall quality hide a group failure?** A 10% group can have zero
+   recall while the other 90% remains correct. Here overall F1 stays at 0.90,
+   above the illustrative 0.85 rule, but the group fails its 0.8 recall minimum.
+5. **What do repeated runs compare?** Generated CSV hashes, mutation definitions
+   and report measurements/checks/coverage. Run IDs, timestamps and absolute paths
+   legitimately differ; model bytes are recorded, not assumed portable.
+
+### 60-second explanation
+
+I built controlled experiments to verify that ModelGate detects specific defects
+through its real command-line interface. I generated reproducible synthetic data,
+trained the existing Logistic Regression and Random Forest pipelines once each,
+and reused them across a clean control and four deliberately defective cases.
+The validator found exactly 20 contaminated reference rows, identified a copied
+target column and measured maximum KS distance for a shifted feature. For the
+segment experiment, reversing one feature relationship in a 100-row group reduced
+its recall to zero while overall F1 remained 0.90. The suite compares exact
+expected measurements, not merely PASS/FAIL text. It treats deliberate validation
+failures as successful experiments but rejects missing evidence and execution
+errors. These are software controls, not claims of real-world detection rates or
+production readiness.
+
+### Understanding exercise
+
+Why should a contamination audit return 1 while its successful experiment runner
+returns 0? If the model file cannot be loaded and the audit returns 2, why must
+that never count as detecting contamination? Finally, explain how overall F1 0.90
+can coexist with zero recall in the selected segment.
