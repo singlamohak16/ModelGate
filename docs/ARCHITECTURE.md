@@ -207,5 +207,27 @@ exceptions stop the run, retain partial evidence where possible, and return 2.
 The writer cannot guarantee a valid report on disk failure; it never overwrites
 an existing destination. See [the full contract](CLI_REPORTING.md).
 
-No Phase 7 scenario generator, GitHub Actions, Docker or MLflow integration is
-included here. Core library functions remain independently testable.
+No scenario generator was included in Phase 6. Core library functions remain
+independently testable; the Phase 7 layer below adds controls without changing them.
+
+## Phase 7 controlled-experiment layer
+
+`generate_fixtures -> build_scenarios -> fit two clean pipelines once -> write
+configs -> ten CLI subprocesses -> assess existing reports -> summary`.
+
+- `experiments.py` defines laboratory fixtures, copy-on-mutation scenarios,
+  predeclared thresholds, artifact/config/data fingerprints, and expected-result
+  comparisons. It calls the existing baseline builders and ordinary Phase 6 CLI;
+  it does not reimplement metrics, check rules or status aggregation.
+- `scripts/run_experiments.py` is a thin argument/output wrapper. Experiment
+  success means expected audit behavior, not that every audit returned zero.
+- `tests/test_experiments.py` checks transformations, repeated complete suites,
+  evidence identity, model reuse and failures of the experiment harness itself.
+- All generated files live in a new ignored output directory by default.
+  Original Telco data/model paths are never read or mutated by this layer.
+
+The manifest records every intentional mutation. Report fingerprints must map
+to the generated roles/files; a final hash check detects accidental validation
+mutation. The runner distinguishes unexpected findings (1) from execution errors
+(2), while expected deliberate audit failures contribute to runner success (0).
+No new runtime dependency, CI, Docker, MLflow or deployment integration is added.

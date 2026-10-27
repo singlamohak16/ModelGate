@@ -437,3 +437,54 @@
   Atomic publication via temporary files could be added for stronger durability.
 - **Limit:** A write failure can leave a partial output, and invalid configuration
   may leave no report. Return 2/stderr remains authoritative in those cases.
+
+## D031 — Invented negative/positive controls with unchanged model pipelines
+
+- **Date:** 2026-10-28
+- **Status:** Accepted
+- **Decision:** Generate 1,000-row train/reference controls with a continuous,
+  separated signal and 900/100-row balanced segments. Fit the existing LR/RF
+  pipelines once each on clean synthetic training data; reuse them for five
+  scenarios each. Never read or alter real Telco artifacts.
+- **Reason:** Real Telco already has legitimate warnings and weak segment recall.
+  It cannot honestly serve as a fully clean control. Synthetic data isolates the
+  intended property and makes exact expected measurements explainable.
+- **Alternatives:** Only real-data perturbations are more realistic but confound
+  existing issues; mocked model outputs skip inference and artifact loading.
+- **Limit:** Synthetic rows are not realistic customers. Perfect clean F1 and
+  successful extreme-defect detection do not establish real-world accuracy or
+  detection/false-positive rates.
+
+## D032 — Isolated mutations and predeclared illustrative limits
+
+- **Date:** 2026-10-28
+- **Status:** Accepted
+- **Decision:** Copy 20 whole training rows into reference; append an audit-only
+  target copy; shift tenure by 100 in an unlabeled reference copy; reflect tenure
+  around 30 in the 100-row segment. Fix overall F1 >=0.85, group recall >=0.8,
+  minimum group size 50 and drift limits 0.2 before evaluation.
+- **Reason:** Exact counts, unchanged labels/IDs where required and negative
+  controls make causally constructed software behavior understandable. The small
+  degraded group demonstrates overall F1 0.90 masking group recall 0.00.
+- **Alternatives:** Appending contaminated rows changes denominators; modifying
+  probabilities is simpler but bypasses the public data-to-inference path.
+- **Limit:** Leakage is detected in the supplied CSV but excluded from predictions,
+  so this does not measure leakage-driven metric inflation. A copied current
+  sample is always labeled as a software control, never new temporal data.
+
+## D033 — Expected failures are experiment successes, not hidden exceptions
+
+- **Date:** 2026-10-28
+- **Status:** Accepted
+- **Decision:** Invoke the actual module CLI in subprocesses. Inspect validated
+  reports and exact evidence; require unique/evaluated targeted rules and matching
+  generated-file provenance. Runner 0 means all expectations matched; 1 means
+  unexpected findings; 2 means execution/provenance failure. Keep individual
+  audit exits unchanged. Refuse existing output directories.
+- **Reason:** A contamination audit's expected exit 1 must not break future CI,
+  while a missing report or execution error must never count as successful
+  detection. Cross-platform manifest keys use canonical relative paths.
+- **Alternatives:** Calling check functions alone is faster but misses integration
+  failures; merely accepting any nonzero exit confuses defects with broken code.
+- **Limit:** Subprocess tests are slower. A timeout is treated as an execution
+  error; early generation/write failures may leave only partial evidence.

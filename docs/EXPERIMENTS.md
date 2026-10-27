@@ -321,3 +321,46 @@ rules/1 and configuration/input/execution errors/2. Missing predictors block
 dependent metrics while independent data/categorical drift checks continue;
 unlabeled current data yields no labeled performance claims. These are focused
 Phase 6 tests, not the Phase 7 four-scenario experiment framework.
+
+## Phase 7 controlled experiments — 2026-10-28
+
+The suite now runs the four defective scenarios plus a clean negative control
+through the actual CLI for both LR and RF. It uses invented, explicitly
+Telco-shaped fixtures, not the real Telco dataset: 1,000 training and 1,000
+reference rows, each with 900/100-row segments balanced within outcome classes.
+Both pipelines fit once on clean synthetic training features. Seed is 42.
+
+Fixed policies: decision threshold 0.5, minimum overall F1 0.85, minimum segment
+recall 0.8, minimum segment size 50, maximum drift distances 0.2.
+
+| Scenario | Expected | Observed for both models | Audit exit |
+| --- | --- | --- | ---: |
+| Clean | No warnings/failures; zero self-comparison differences | PASS; overall F1/group recalls 1.00, all self distances/changes zero | 0 |
+| Contamination | Exact ID overlap FAIL | 20/1,000 = 0.02 overlapping reference rows; 20 predictor matches | 1 |
+| Target leakage | Target-copy heuristic WARNING | `injected_target_copy`, exact_copy, coverage 1.0; excluded from predictors | 0 |
+| Feature drift | Shifted feature WARNING; unchanged features zero | Tenure KS 1.0; other 18 feature distances zero; no labeled current claims | 0 |
+| Segment degradation | Group recall FAIL while overall F1 passes | One year recall 0.00; other group recall 1.00; overall F1 0.90 | 1 |
+
+Audit PASS/WARNING/FAIL counts respectively are 276/0/0, 157/1/1, 159/2/0,
+224/3/0 and 158/0/1 for the scenarios above, for each model. LR prediction KS
+under the feature shift is 1.0; RF is 0.5. These are model-dependent scores, not
+additional evidence of performance loss because current labels are unavailable.
+
+The affected segment confusion matrix is [[0,50],[50,0]]; overall is
+[[450,50],[50,450]]. The segment recall gap is -0.90 from overall and -1.00 from
+the best segment. Exactly 100 rows have tenure reflected around 30; their labels,
+IDs and other features do not change. The other 900 rows remain unchanged.
+
+The first local run and final provenance-verified run matched all 628 assertions
+across ten audits. Final local evidence is under `artifacts/phase7-verified/`,
+including `manifest.json`, `summary.json` and ten standard audit reports.
+Repeatability tests generate two complete suites independently and compare CSV
+hashes and report checks/results/coverage. IDs/timestamps/absolute paths are not
+expected to match. All generated evidence remains ignored by Git.
+
+Interpretation limits: the added leakage column also produces an extra-column
+warning; unlabeled current data produces an unevaluated leakage-heuristic warning.
+The perfect clean control and extreme injected defects are deliberately easy.
+They establish behavior on these cases, not realistic accuracy, detection power,
+false-positive rates, fairness or production readiness. Original Telco artifacts
+and measurements remain unchanged. No Phase 8 workflow was added.

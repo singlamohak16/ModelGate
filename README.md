@@ -16,6 +16,8 @@ Phase 5 adds feature/prediction drift and explicitly labeled performance-change
 checks, without inferring performance loss from unlabeled data.
 Phase 6 connects these checks through validated YAML, the `modelgate validate`
 command, versioned JSON reports, and explicit validation/error exit codes.
+Phase 7 adds deterministic synthetic controls that verify four deliberately
+injected defects through that same CLI with both model pipelines.
 
 ModelGate produces evidence-based `PASS`, `WARNING`, and `FAIL` results.
 It will not automatically approve, reject, retrain, or deploy a model, and its
@@ -208,7 +210,39 @@ Exit **0** means completed without failed rules (PASS or WARNING); **1** means
 completed with failed rules; **2** means configuration/input/execution/report-write
 error. An error report has a null overall verdict, not a new validation status.
 See [CLI, configuration and report contracts](docs/CLI_REPORTING.md).
-The four-scenario framework, CI and MLflow remain Phases 7–9.
+The synthetic scenario framework is described below. CI and MLflow remain
+Phases 8–9.
+
+## Run the Phase 7 controlled experiments
+
+No IBM download or existing model artifacts are needed:
+
+```powershell
+.venv\Scripts\python scripts/run_experiments.py --output-dir artifacts/phase7
+```
+
+If that directory exists, choose a new name, such as `artifacts/phase7-repeat`.
+The runner refuses existing directories and never overwrites earlier evidence.
+It creates invented Telco-shaped fixtures, fits the existing LR/RF pipelines
+once each on clean synthetic training data, then runs ten real CLI subprocesses.
+All generated CSVs, models, configurations, manifests and reports stay ignored.
+Your actual Telco data and fitted baselines are not read or changed.
+
+| Control (both models) | Measured result | Audit status / exit |
+| --- | --- | --- |
+| Clean | Overall F1 and both segment recalls = 1.00; self-comparison drift/change = 0 | PASS / 0 |
+| Contamination | Exactly 20/1,000 reference IDs overlap training | FAIL / 1 |
+| Target leakage | Exact target-copy column identified, excluded from predictions | WARNING / 0 |
+| Feature drift | Shifted tenure KS = 1.00; other feature distances = 0 | WARNING / 0 |
+| Segment degradation | Selected segment recall = 0.00; overall F1 = 0.90 still meets 0.85 | FAIL / 1 |
+
+The runner returns **0 when all expected findings match**, including deliberately
+failed audits; **1** for unexpected findings and **2** for execution errors.
+Read `summary.json` for expected/observed assertions and individual reports for
+the underlying evidence. These easy synthetic controls demonstrate software
+behavior, not realistic churn accuracy, detection rates or production readiness.
+See [controlled experiments](docs/CONTROLLED_EXPERIMENTS.md) for transformations,
+fixed illustrative thresholds, reproduction and limitations.
 
 ## Documentation
 
@@ -219,6 +253,7 @@ The four-scenario framework, CI and MLflow remain Phases 7–9.
 - [Segment validation and comparisons](docs/SEGMENT_VALIDATION.md)
 - [Drift and labeled performance changes](docs/DRIFT_VALIDATION.md)
 - [CLI, configuration and JSON reporting](docs/CLI_REPORTING.md)
+- [Controlled experiments and expected results](docs/CONTROLLED_EXPERIMENTS.md)
 - [Decisions](docs/DECISIONS.md)
 - [Build log](docs/BUILD_LOG.md)
 - [Experiments](docs/EXPERIMENTS.md)

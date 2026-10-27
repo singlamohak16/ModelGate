@@ -207,3 +207,47 @@ backdate project activity.
   directory denied writes; this disables only optional cache persistence.
 - Updated README, architecture, CLI contract, decisions, measured experiments and
   interview guide. No Phase 6 commit/push/PR, no Phase 7 work or hosted CI here.
+
+## Phase 7 — Controlled experiments (2026-10-28)
+
+- Received explicit approval after the Phase 7 proposal. Confirmed clean main at
+  merged Phase 6 commit `bfc72e7`, fetched origin and verified equality, then
+  created local `phase/7-controlled-experiments`. No remote writes were made.
+- Added deterministic invented Telco-shaped fixtures with separate seeded streams,
+  1,000 rows per split, balanced labels and 900/100-row Contract groups. The signal
+  deliberately separates classes; these are not IBM samples or realistic customers.
+- Added copy-on-mutation controls for exactly 20 contaminated rows, an audit-only
+  copied target column, tenure shifted by 100 in an unlabeled current copy, and
+  tenure reflected within the 100-row segment without changing labels/IDs.
+- Reused unchanged LR/RF builders, fitting each once on clean synthetic training
+  data. Generated ten configurations pinning model hashes and fixed illustrative
+  limits, then ran ten actual module CLI subprocesses. No new dependency, metric
+  implementation, public dataset, GitHub Actions, Docker or MLflow was added.
+- Recorded mutation positions, seed and CSV/config/model fingerprints in a
+  manifest. Added report identity/evidence checks, expected/observed summaries,
+  post-validation immutability checks, timeout/error handling and existing-output
+  refusal. Deliberate audit FAIL/1 counts as success only when its evidence matches;
+  execution errors cannot count as successful detection.
+- First local suite matched all ten scenarios. Stronger provenance tests then
+  exposed inconsistent Windows path separators in manifest lookup; canonical
+  forward-slash relative paths fixed the issue. Corrected a negative test to use
+  the Status enum when injecting a blocked result, preserving its typed contract.
+- Final local suite at ignored `artifacts/phase7-verified/` matched all 628
+  assertions. Clean F1/segment recalls were 1.0; contamination count was 20/1,000;
+  exact target copy was identified; tenure KS was 1.0 while other feature distances
+  were zero. Segment recall fell to 0.0 while overall F1 remained 0.90 and passed.
+  Prediction KS differed by model: LR 1.0, RF 0.5. These are software controls,
+  not claims of real-world quality, fairness, stability or detection rates.
+- Passed 456 tests (415 prior + 41 new) in 95.20 seconds. Two independently
+  generated complete test suites matched CSV hashes and report measurements,
+  checks and coverage. Tests also reject missing/duplicate/blocked/wrong evidence,
+  tampered hash/path/role provenance, missing or invalid reports, timeout, exit 2
+  despite a valid report, and unexpected input mutation. Wrapper codes 0/1/2,
+  fit-once clean-data behavior and existing-directory protection are covered.
+- Ruff lint/format checks, dependency integrity and whitespace checks passed.
+  Optional pytest cache persistence was disabled as in Phase 6. Verified all ten
+  final report schemas, generated file hashes, and unchanged original Telco CSV
+  and baseline model hashes. Generated reports, fixtures, models and configs remain
+  excluded from Git; only source, tests and documentation are proposed for commit.
+- Updated README, architecture, decisions, controlled-experiment guide, measured
+  evidence and interview notes. No Phase 7 commit/push/PR or Phase 8 work yet.
