@@ -18,6 +18,9 @@ Phase 6 connects these checks through validated YAML, the `modelgate validate`
 command, versioned JSON reports, and explicit validation/error exit codes.
 Phase 7 adds deterministic synthetic controls that verify four deliberately
 injected defects through that same CLI with both model pipelines.
+Phase 8 adds a CI workflow, subprocess-aware coverage gates, distribution checks
+and an isolated installed-CLI smoke test. Local verification is recorded;
+the first hosted GitHub Actions run is pending an approved push.
 
 ModelGate produces evidence-based `PASS`, `WARNING`, and `FAIL` results.
 It will not automatically approve, reject, retrain, or deploy a model, and its
@@ -254,6 +257,7 @@ fixed illustrative thresholds, reproduction and limitations.
 - [Drift and labeled performance changes](docs/DRIFT_VALIDATION.md)
 - [CLI, configuration and JSON reporting](docs/CLI_REPORTING.md)
 - [Controlled experiments and expected results](docs/CONTROLLED_EXPERIMENTS.md)
+- [Testing, coverage and CI](docs/TESTING_CI.md)
 - [Decisions](docs/DECISIONS.md)
 - [Build log](docs/BUILD_LOG.md)
 - [Experiments](docs/EXPERIMENTS.md)

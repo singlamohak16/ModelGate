@@ -488,3 +488,47 @@
   failures; merely accepting any nonzero exit confuses defects with broken code.
 - **Limit:** Subprocess tests are slower. A timeout is treated as an execution
   error; early generation/write failures may leave only partial evidence.
+
+## D034 — Compatibility matrix and subprocess-aware coverage
+
+- **Date:** 2026-10-29
+- **Status:** Accepted; hosted execution pending
+- **Decision:** Test Ubuntu on Python 3.11/3.12 and Windows on 3.12. Measure the
+  application including CLI children on Ubuntu 3.12; gate line and combined
+  line/branch coverage at 90%. Record resolved packages in logs.
+- **Reason:** Exercise declared minimum Python and Windows path behavior without
+  multiplying every OS/version combination. Existing subprocess integration must
+  contribute coverage rather than appear unexecuted.
+- **Alternatives:** One runner is cheaper but misses compatibility problems; a
+  full OS/version Cartesian matrix costs more without proportionate current value.
+- **Limit:** Local Windows results cannot certify the hosted matrix. Coverage
+  establishes execution, not assertion strength or model validity. Dependency
+  ranges detect updates but are less reproducible than platform-specific locks.
+
+## D035 — Verify distributable package and installed console behavior
+
+- **Date:** 2026-10-29
+- **Status:** Accepted
+- **Decision:** Build sdist/wheel, inspect contents and exact entry point, install
+  the wheel in a fresh environment, then run outside the checkout with isolated
+  Python and an import-location guard. Require exact evidence for exits 0/1/2.
+- **Reason:** Editable installs can conceal missing files and broken entry points.
+  Expected audit FAIL must be distinguished from execution failure.
+- **Alternatives:** Import-only smoke tests miss command behavior; a container
+  can isolate the OS but adds an engine/image lifecycle beyond this package check.
+- **Limit:** The smoke uses one model and three synthetic cases; the full suite
+  supplies broader coverage. Archive allow/deny checks are not secret scanning.
+
+## D036 — Minimal CI permissions and deferred Docker
+
+- **Date:** 2026-10-29
+- **Status:** Accepted
+- **Decision:** Pin official actions to commit SHAs, use contents-read permission,
+  avoid persisted checkout credentials and secrets, limit job time, and retain
+  only explicit synthetic JSON/test/coverage evidence for seven days. Defer Docker.
+- **Reason:** Testing needs no repository writes, dataset publication or image
+  registry. A local Docker engine was unavailable during the approved proposal.
+- **Alternatives:** Mutable action tags simplify updates but can change silently;
+  uploading the entire working directory risks including local data and models.
+- **Limit:** Pins require maintenance. Dependency setup still needs network access.
+  Defining CI neither configures branch protection nor proves hosted success.

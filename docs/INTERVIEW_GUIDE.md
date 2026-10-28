@@ -698,3 +698,106 @@ Why should a contamination audit return 1 while its successful experiment runner
 returns 0? If the model file cannot be loaded and the audit returns 2, why must
 that never count as detecting contamination? Finally, explain how overall F1 0.90
 can coexist with zero recall in the selected segment.
+
+## Phase 8 — Testing, coverage and package verification
+
+### Plain-English explanation
+
+CI repeats the project's checks when code is pushed or proposed for merging.
+It checks formatting, runs tests in several environments, and tries the actual
+installable package. A successful result means those checks passed for that
+revision; it does not approve a model for production. Local verification is
+complete only for the environment actually used; hosted results remain pending
+until the workflow runs on GitHub.
+
+### Main components and data flow
+
+The workflow has quality, test-matrix and package jobs. Tests run on Ubuntu with
+Python 3.11/3.12 and Windows with 3.12. Coverage instruments the application and
+CLI subprocesses, then combines measurements. `check_coverage.py` enforces the
+line target and checks that the module CLI entry point was executed.
+
+The package job builds an sdist and wheel, inspects archive names/entry-point
+metadata, installs the wheel in a fresh environment, and copies `ci_smoke.py`
+outside the checkout. An import-location guard rejects an editable install.
+The smoke reuses invented Phase 7 fixtures and report assertions, fits one LR
+pipeline, and invokes the installed console command for clean, contaminated and
+missing-input cases. Each report must validate and match its expected evidence.
+
+### Statistics and ML concepts
+
+Line coverage is covered executable statements divided by all executable
+statements; branch coverage counts explored branch destinations. A threshold
+like 90% is an engineering policy, not a confidence level. Executing a line does
+not prove its result is correct. Negative controls, exact positive-control
+measurements, failure-path tests and schema assertions give coverage meaning.
+Synthetic F1 1.0 is deliberately constructed and says nothing about Telco churn
+accuracy. Dependency compatibility also differs from statistical reproducibility.
+
+### Rationale and two alternatives
+
+Subprocess-aware coverage reflects the real CLI path. Isolated wheel installation
+catches packaging errors an editable checkout can hide. Expected audit exit 1 is
+asserted, while an unexpected exit or malformed report fails the smoke wrapper.
+The selected matrix samples OS and Python differences at manageable cost.
+
+Alternative one: test only an editable install on one runner. This is faster but
+can miss missing wheel files, entry-point errors and OS path differences.
+Alternative two: run every check inside Docker. This can standardize the OS and
+dependencies but introduces engine, image and update work; it does not replace
+testing the distributable package or Windows behavior. Docker was explicitly
+deferred because no working local engine was available.
+
+### Limitations and failure modes
+
+High coverage can coexist with weak assertions. Three OS/Python combinations do
+not cover every supported interpreter, dependency range or platform. Unlocked
+dependency resolution can break on future releases, so exact installed versions
+are logged. Network failures during package setup differ from application failures.
+An archive content guard is not a general secret scanner. CI report uploads can
+be absent after an early failure, and seven-day retention is not archival storage.
+No hosted-success, branch-protection or production-readiness claim follows from
+local tests or merely adding a workflow file.
+
+### Five likely interview questions
+
+1. **Why combine subprocess coverage?** The CLI runs in separate interpreters.
+   Without child instrumentation and combining their files, parent measurements
+   can omit the application work. The module entry point also has an explicit
+   statement-coverage check.
+2. **Why test a wheel outside the checkout?** Editable installations can import
+   source files that packaging forgot to include. A fresh environment, isolated
+   Python and import-location check establish the code being exercised.
+3. **Why does an audit exit 1 not fail the package job?** The contamination case
+   is intentionally invalid. The wrapper requires exit 1 plus the exact failure
+   evidence, then returns 0 only if every case matched its expectations.
+4. **What does 90% coverage prove?** Only that at least that fraction of measured
+   statements or combined line/branch destinations executed. It does not quantify
+   correctness, assertion quality or model performance.
+5. **How do you restrict CI's access and outputs?** Read-only repository contents,
+   immutable action pins, no persisted checkout credentials or secrets, bounded
+   runtime, and explicit synthetic JSON/JUnit/coverage uploads with seven-day
+   retention. The workflow does not publish data, models or packages.
+
+### 60-second explanation
+
+I added CI around ModelGate's existing validation and synthetic experiments.
+The workflow checks Ruff formatting and lint, runs the complete tests across
+Linux and Windows with selected Python versions, and measures application
+coverage including CLI subprocesses. Both line and combined line/branch coverage
+must reach 90%. I also build the source distribution and wheel, reject accidental
+data or model inclusion, and install the wheel into a clean environment. From
+outside the checkout, I invoke the real console command and require three
+outcomes: clean PASS with exit zero, contamination FAIL with exit one, and a
+missing-input error with exit two and no verdict. Reports must have the expected
+schema and evidence. The workflow uses read-only permissions and retains only
+selected synthetic evidence. Local results and hosted GitHub results are recorded
+separately, and neither establishes production model quality.
+
+### Understanding exercise
+
+Suppose a wheel omits `modelgate/experiments.py`, the contamination CLI exits 2
+instead of 1, or parent-only coverage reports 96% while no child data exists.
+Identify the guard for each failure and explain why simply accepting a nonzero
+CLI exit or reporting a large coverage percentage would be insufficient. Then
+explain which conclusions still require an actual hosted workflow run.

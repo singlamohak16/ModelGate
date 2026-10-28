@@ -231,3 +231,24 @@ to the generated roles/files; a final hash check detects accidental validation
 mutation. The runner distinguishes unexpected findings (1) from execution errors
 (2), while expected deliberate audit failures contribute to runner success (0).
 No new runtime dependency, CI, Docker, MLflow or deployment integration is added.
+
+## Phase 8 verification layer
+
+The CI workflow runs independent quality, test-matrix and package jobs. The
+application dependency graph and validation calculations are unchanged. Coverage
+instruments the application plus subprocesses, combines their measurements, and
+gates both line and combined line/branch coverage at 90%.
+
+`scripts/check_coverage.py` validates line coverage and module CLI evidence.
+`scripts/check_distributions.py` reads archive member names and entry-point
+metadata without extracting them, rejecting missing core files or included local
+data/models. `scripts/ci_smoke.py` reuses Phase 7 fixture and evidence helpers while
+invoking the installed console executable on expected audit exits 0, 1 and 2.
+The package job creates a new environment, installs the wheel, and runs that
+script from outside the checkout with an installed-package location guard.
+
+Only development dependencies gain coverage.py and build. `MANIFEST.in` supplies
+the sdist's public examples, test helpers and documentation. Explicit artifact
+upload paths retain synthetic JSON and test/coverage reports for seven days.
+Docker remains deferred; hosted verification awaits an approved push. See
+[Testing and CI](TESTING_CI.md) for reproduction and boundaries.
