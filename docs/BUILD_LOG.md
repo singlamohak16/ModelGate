@@ -290,3 +290,25 @@ backdate project activity.
   evidence passed; no application lines were excluded. Ruff lint/format,
   dependency integrity and Git whitespace checks passed. Final local coverage
   and JUnit evidence is in ignored `artifacts/phase8-coverage-final/`.
+
+### Phase 8 first push and Windows CI follow-up (2026-10-29)
+
+- After separate approvals, committed Phase 8 as `0b2b999` and pushed
+  `phase/8-testing-ci` to `singlamohak16/ModelGate`. Local and remote heads matched.
+- Inspected hosted Actions run `40760649017`. Quality, Ubuntu/Python 3.11,
+  Ubuntu/Python 3.12 with coverage, and package/installed-CLI jobs passed.
+  Windows/Python 3.12 finished with 488 passed and one failed smoke-helper test.
+- The Windows runner uses standalone Python, whose commands live under `Scripts`.
+  The smoke helper incorrectly looked beside `python.exe`, an assumption masked
+  by the local virtual environment. Replaced sibling-path lookup with Python's
+  configured scripts path and added four regression cases for standalone/venv
+  layouts, including rejection of a decoy launcher when the real one is missing.
+- Updated current status and the decision record. The first push remains the
+  only remote write; the fix requires a separate commit and push approval. No PR
+  was opened, and hosted CI is not yet fully green.
+- Verified the correction locally: all 493 tests passed in 109.84 seconds; Ruff
+  lint/format, dependency integrity and whitespace checks passed. The corrected
+  helper also passed all three installed-wheel cases from outside the checkout.
+  Evidence is under ignored `artifacts/phase8-ci-fix/`. Hosted Linux logs confirmed
+  489 tests passed on each Python version and 99.00% line / 98.49% combined coverage
+  for the original pushed commit. The correction is not yet committed or pushed.

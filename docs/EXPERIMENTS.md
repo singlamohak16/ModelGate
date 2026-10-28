@@ -411,3 +411,26 @@ Hosted CI has **not run yet**. The Ubuntu/Python 3.11, Ubuntu/Python 3.12 and
 Windows/Python 3.12 matrix is configured, awaiting an approved GitHub push.
 Docker is deferred. Coverage and synthetic checks do not establish production
 readiness, statistical detection rates or real-world model quality.
+
+### Subsequent hosted run and Windows helper fix (2026-10-29)
+
+The initial pending-hosted status above describes the implementation checkpoint.
+After the approved push, [run 40760649017](https://github.com/singlamohak16/ModelGate/actions/runs/40760649017)
+for `0b2b999` passed quality, both Ubuntu test jobs, coverage gates and the package
+job. Windows/Python 3.12 produced 488 passed and one failure in 89.33 seconds.
+The failure was console-path discovery in the smoke helper, before its audit
+cases ran: standalone Windows Python installs launchers under `Scripts`, unlike
+the sibling executable layout of the local virtual environment.
+
+The local correction uses `sysconfig.get_path("scripts")` with four layout and
+missing-launcher regression cases. The existing application and model calculations
+are unaffected. A new hosted run after a separately approved fix commit/push is
+required before declaring the entire matrix successful.
+
+Hosted Python 3.11 passed 489 tests in 72.71 seconds; hosted Python 3.12 with
+coverage passed 489 in 162.26 seconds, with 99.00% line and 98.49% combined coverage.
+After the helper correction, all 493 local tests passed in 109.84 seconds. Ruff
+lint/format, dependency integrity and the installed-wheel smoke (0/1/2) passed.
+The latter used the corrected helper with the unchanged installed application;
+no new application coverage measurement was claimed for this helper-only fix.
+Local correction evidence is under `artifacts/phase8-ci-fix/`.

@@ -492,7 +492,7 @@
 ## D034 — Compatibility matrix and subprocess-aware coverage
 
 - **Date:** 2026-10-29
-- **Status:** Accepted; hosted execution pending
+- **Status:** Accepted; initial hosted run completed, Windows follow-up pending
 - **Decision:** Test Ubuntu on Python 3.11/3.12 and Windows on 3.12. Measure the
   application including CLI children on Ubuntu 3.12; gate line and combined
   line/branch coverage at 90%. Record resolved packages in logs.
@@ -532,3 +532,18 @@
   uploading the entire working directory risks including local data and models.
 - **Limit:** Pins require maintenance. Dependency setup still needs network access.
   Defining CI neither configures branch protection nor proves hosted success.
+
+## D037 — Discover installed commands through Python's installation scheme
+
+- **Date:** 2026-10-29
+- **Status:** Accepted; hosted verification of fix pending
+- **Decision:** Resolve the smoke runner's console command using
+  `sysconfig.get_path("scripts")`, then require the expected file to exist.
+- **Reason:** The first hosted Windows job installed into standalone Python,
+  where `python.exe` is in the installation root and console commands are in
+  `Scripts`. The prior sibling-path assumption only worked in the local venv.
+- **Alternatives:** Force every test job into a venv, which would conceal this
+  assumption; search PATH, which could select a different environment's command.
+- **Limit:** The helper targets the active interpreter's default installation
+  scheme, not arbitrary `--user` or custom-prefix installations. Four regression
+  cases cover standalone/venv layouts and present/missing launchers.

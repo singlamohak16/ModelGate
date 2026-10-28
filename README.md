@@ -19,8 +19,9 @@ command, versioned JSON reports, and explicit validation/error exit codes.
 Phase 7 adds deterministic synthetic controls that verify four deliberately
 injected defects through that same CLI with both model pipelines.
 Phase 8 adds a CI workflow, subprocess-aware coverage gates, distribution checks
-and an isolated installed-CLI smoke test. Local verification is recorded;
-the first hosted GitHub Actions run is pending an approved push.
+and an isolated installed-CLI smoke test. The first hosted run passed Linux,
+coverage and package checks, but exposed a Windows smoke-helper path assumption.
+Its local fix awaits a new hosted run; see [testing status](docs/TESTING_CI.md).
 
 ModelGate produces evidence-based `PASS`, `WARNING`, and `FAIL` results.
 It will not automatically approve, reject, retrain, or deploy a model, and its

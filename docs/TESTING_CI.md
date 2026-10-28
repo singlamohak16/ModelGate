@@ -2,8 +2,13 @@
 
 Phase 8 adds automated verification without changing model or audit calculations.
 Local Windows/Python 3.12 verification is recorded in [EXPERIMENTS.md](EXPERIMENTS.md).
-Hosted Linux/Python 3.11 and the GitHub runner matrix remain unverified until an
-approved push runs `.github/workflows/ci.yml`. Docker is explicitly deferred.
+The [first hosted run](https://github.com/singlamohak16/ModelGate/actions/runs/40760649017)
+passed Linux/Python 3.11 and 3.12, coverage, lint and package verification. Windows
+passed 488 tests but failed one smoke-helper test because standalone Python keeps
+commands in its `Scripts` directory, rather than beside `python.exe` as in a venv.
+The helper now uses `sysconfig.get_path("scripts")`, with regression tests for
+both layouts and missing launchers. A new hosted run is needed to verify the fix.
+Docker is explicitly deferred.
 
 ## Workflow
 

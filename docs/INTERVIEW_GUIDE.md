@@ -801,3 +801,14 @@ instead of 1, or parent-only coverage reports 96% while no child data exists.
 Identify the guard for each failure and explain why simply accepting a nonzero
 CLI exit or reporting a large coverage percentage would be insufficient. Then
 explain which conclusions still require an actual hosted workflow run.
+
+### Lesson from the first hosted Windows run
+
+Linux, coverage and package verification passed, but the Windows smoke helper
+looked for a console launcher beside `python.exe`. A standalone Windows Python
+installation uses a `Scripts` subdirectory; the local venv had hidden that
+assumption. Use `sysconfig.get_path("scripts")` to ask the active Python for its
+installation scheme. Test both layouts and ensure a missing correct launcher
+cannot be masked by a different executable beside Python. This illustrates why
+cross-platform CI adds evidence beyond passing local tests; hosted verification
+of the correction is still required.

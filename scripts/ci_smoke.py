@@ -5,6 +5,7 @@ import json
 import os
 import subprocess
 import sys
+import sysconfig
 from importlib.metadata import distribution
 from pathlib import Path
 
@@ -35,13 +36,19 @@ def check_installed_package():
     return str(actual)
 
 
-def run_smoke(output_dir, *, require_wheel=False):
-    module_path = check_installed_package() if require_wheel else modelgate.__file__
-    executable = Path(sys.executable).parent / (
+def console_executable():
+    """Use the active installation scheme, including standalone Windows Python."""
+    executable = Path(sysconfig.get_path("scripts")) / (
         "modelgate.exe" if os.name == "nt" else "modelgate"
     )
     if not executable.is_file():
         raise FileNotFoundError(f"Installed console entry point missing: {executable}")
+    return executable
+
+
+def run_smoke(output_dir, *, require_wheel=False):
+    module_path = check_installed_package() if require_wheel else modelgate.__file__
+    executable = console_executable()
     root = Path(output_dir).resolve()
     root.mkdir(parents=True, exist_ok=False)
     for name in ("models", "configs", "reports", "clean", "contamination"):

@@ -250,5 +250,9 @@ script from outside the checkout with an installed-package location guard.
 Only development dependencies gain coverage.py and build. `MANIFEST.in` supplies
 the sdist's public examples, test helpers and documentation. Explicit artifact
 upload paths retain synthetic JSON and test/coverage reports for seven days.
-Docker remains deferred; hosted verification awaits an approved push. See
+Console discovery uses Python's configured scripts directory, supporting both
+standalone Windows installations and virtual environments. The first hosted run
+passed Linux/coverage/package jobs and exposed the now-locally-fixed Windows
+discovery assumption; hosted verification of the fix remains pending.
+Docker remains deferred. See
 [Testing and CI](TESTING_CI.md) for reproduction and boundaries.

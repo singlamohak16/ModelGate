@@ -170,6 +170,36 @@ def test_wheel_guard_rejects_editable_checkout(monkeypatch, tmp_path):
         script.check_installed_package()
 
 
+@pytest.mark.parametrize("layout", ["standalone", "virtualenv"])
+@pytest.mark.parametrize("installed", [True, False])
+def test_console_location_uses_installation_scheme(
+    tmp_path, monkeypatch, layout, installed
+):
+    script = load_script("ci_smoke")
+    scripts = tmp_path / "Scripts"
+    scripts.mkdir()
+    python_dir = tmp_path if layout == "standalone" else scripts
+    monkeypatch.setattr(script.sys, "executable", str(python_dir / "python.exe"))
+
+    def get_path(name):
+        assert name == "scripts"
+        return str(scripts)
+
+    monkeypatch.setattr(script.sysconfig, "get_path", get_path)
+    name = "modelgate.exe" if script.os.name == "nt" else "modelgate"
+    expected = scripts / name
+    # A sibling executable in standalone Python's root must not mask a missing
+    # command in its configured Scripts directory.
+    if layout == "standalone":
+        (python_dir / name).touch()
+    if installed:
+        expected.touch()
+        assert script.console_executable() == expected
+    else:
+        with pytest.raises(FileNotFoundError, match="entry point missing"):
+            script.console_executable()
+
+
 def test_console_smoke_pass_fail_error_and_output_protection(tmp_path):
     script = load_script("ci_smoke")
     output = tmp_path / "smoke"
