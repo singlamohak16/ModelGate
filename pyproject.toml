@@ -24,6 +24,8 @@ dependencies = [
 dev = [
     "pytest>=8,<10",
     "ruff>=0.6,<1",
+    "coverage>=7.10.6,<8",
+    "build>=1.2,<2",
 ]
 
 [project.scripts]
@@ -46,3 +48,21 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.coverage.run]
+branch = true
+source = ["modelgate"]
+parallel = true
+patch = ["subprocess"]
+
+[tool.coverage.report]
+show_missing = true
+precision = 2
+# Branch-aware combined coverage is gated too; line coverage is checked separately.
+fail_under = 90
+
+[tool.coverage.xml]
+output = "artifacts/ci/coverage.xml"
+
+[tool.coverage.json]
+output = "artifacts/ci/coverage.json"

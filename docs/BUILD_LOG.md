@@ -251,3 +251,64 @@ backdate project activity.
   excluded from Git; only source, tests and documentation are proposed for commit.
 - Updated README, architecture, decisions, controlled-experiment guide, measured
   evidence and interview notes. No Phase 7 commit/push/PR or Phase 8 work yet.
+
+## Phase 8 — Testing and CI (2026-10-29)
+
+- Received explicit Phase 8 approval with Docker deferred. Verified clean main at
+  merged Phase 7 commit `66a9240` against origin, then created local
+  `phase/8-testing-ci`. No remote write was made.
+- Added a least-privilege GitHub Actions workflow with Ruff, full tests on Ubuntu
+  Python 3.11/3.12 and Windows Python 3.12, subprocess-aware coverage, and a package
+  verification job. Verified immutable action SHAs against official release tags.
+  Jobs have bounded runtime and explicit seven-day synthetic evidence uploads.
+- Added only development dependencies: coverage.py (installed 7.17.0) and build
+  (installed 1.6.1, with pyproject_hooks 1.3.3). Existing runtime dependencies and
+  application calculations were unchanged. Isolated builds used setuptools 84.2.1.
+- Added distribution-content and coverage checkers, plus an installed-console
+  smoke runner reusing Phase 7 fixtures and report assertions. Added regression
+  tests for workflow constraints, checker failures, smoke expectations and
+  malformed configuration/CSV/category boundaries.
+- The first coverage run encountered Windows sandbox temporary-directory
+  permission errors. Re-ran with the needed local execution permission; the
+  unchanged 456-test baseline passed with 98.71% line and 98.18% combined coverage.
+  Failed partial measurements were kept separate from successful evidence.
+- Built the source distribution and wheel. Initial inspection showed the sdist
+  needed its script/test support files, so added an explicit `MANIFEST.in` and
+  rebuilt successfully. Archive inspection passed without extracting contents.
+- Installed the wheel into a new ignored environment, verified dependency
+  consistency, and ran the copied smoke script outside the checkout with isolated
+  Python and the installed-package guard. Clean/contamination/missing-input cases
+  produced the required schema-valid PASS/0, FAIL/1 and error/2 reports.
+  Installation resolved newer compatible NumPy/Pydantic versions only in that
+  disposable environment; the development environment remained unchanged.
+- Updated README, architecture, decisions, testing/CI reproduction, measured
+  results and interview notes. No Docker image, Phase 9 MLflow integration,
+  commit, push, PR, deployment or hosted CI run was performed in this step.
+- Final full run: 489 tests passed (456 existing + 33 new) in 316.45 seconds.
+  Application line coverage was 99.00% (1,688/1,705), branch coverage 96.88%
+  (527/544), and combined coverage 98.49%. Both 90% gates and module CLI child
+  evidence passed; no application lines were excluded. Ruff lint/format,
+  dependency integrity and Git whitespace checks passed. Final local coverage
+  and JUnit evidence is in ignored `artifacts/phase8-coverage-final/`.
+
+### Phase 8 first push and Windows CI follow-up (2026-10-29)
+
+- After separate approvals, committed Phase 8 as `0b2b999` and pushed
+  `phase/8-testing-ci` to `singlamohak16/ModelGate`. Local and remote heads matched.
+- Inspected hosted Actions run `40760649017`. Quality, Ubuntu/Python 3.11,
+  Ubuntu/Python 3.12 with coverage, and package/installed-CLI jobs passed.
+  Windows/Python 3.12 finished with 488 passed and one failed smoke-helper test.
+- The Windows runner uses standalone Python, whose commands live under `Scripts`.
+  The smoke helper incorrectly looked beside `python.exe`, an assumption masked
+  by the local virtual environment. Replaced sibling-path lookup with Python's
+  configured scripts path and added four regression cases for standalone/venv
+  layouts, including rejection of a decoy launcher when the real one is missing.
+- Updated current status and the decision record. The first push remains the
+  only remote write; the fix requires a separate commit and push approval. No PR
+  was opened, and hosted CI is not yet fully green.
+- Verified the correction locally: all 493 tests passed in 109.84 seconds; Ruff
+  lint/format, dependency integrity and whitespace checks passed. The corrected
+  helper also passed all three installed-wheel cases from outside the checkout.
+  Evidence is under ignored `artifacts/phase8-ci-fix/`. Hosted Linux logs confirmed
+  489 tests passed on each Python version and 99.00% line / 98.49% combined coverage
+  for the original pushed commit. The correction is not yet committed or pushed.

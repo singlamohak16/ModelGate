@@ -364,3 +364,73 @@ The perfect clean control and extreme injected defects are deliberately easy.
 They establish behavior on these cases, not realistic accuracy, detection power,
 false-positive rates, fairness or production readiness. Original Telco artifacts
 and measurements remain unchanged. No Phase 8 workflow was added.
+
+## Phase 8 local test and package verification (2026-10-29)
+
+Environment: Windows, CPython 3.12.14, coverage.py 7.17.0, build 1.6.1,
+pytest 9.1.1 and Ruff 0.16.7. The development runtime dependency set was unchanged.
+The full suite passed **489 tests in 316.45 seconds**: 456 existing tests plus
+33 new tests for CI constraints, verification helpers and input boundaries.
+
+| Application coverage measurement | Observed | Gate |
+| --- | ---: | ---: |
+| Executable statements | 1,688 / 1,705 = 99.00% | >=90% |
+| Branch destinations | 527 / 544 = 96.88% | Reported separately |
+| Combined statements and branches | 2,215 / 2,249 = 98.49% | >=90% |
+| Module CLI entry-point statements | 3 / 3 | All covered |
+
+No application lines were excluded. Coverage includes instrumented subprocesses;
+18 files were combined and 18 duplicate measurements skipped. The source scope
+is `modelgate`; development helper scripts are tested but outside its denominator.
+Local evidence is in ignored `artifacts/phase8-coverage-final/`: JUnit XML, coverage
+JSON/XML and coverage data. Ruff lint/format and `pip check` passed. An earlier
+permission-blocked test run was discarded as evidence; its files were never
+combined with this successful run.
+
+The sdist and wheel built successfully with isolated setuptools 84.2.1. Archive
+inspection checked core modules and the console entry point, and rejected known
+local-data/model/output paths in negative tests. A fresh wheel environment passed
+`pip check`; the smoke ran from a temporary directory outside the checkout with
+isolated Python and verified imports from its installed `site-packages` directory.
+
+| Installed-console case | Expected | Observed |
+| --- | --- | --- |
+| Clean synthetic control | PASS / 0 with expected clean evidence | Matched |
+| Synthetic contamination | FAIL / 1; 20 overlapping reference IDs | Matched |
+| Missing reference file | Error / 2; null verdict; error details | Matched |
+
+All three audit reports validated against `AuditReport`. The smoke wrapper itself
+returned 0 because all expected outcomes matched. Evidence from the first fresh
+install is in `artifacts/phase8-wheel-smoke/`; generated CSVs, models and reports
+remain ignored. Package installation resolved NumPy 2.5.4, pandas 2.3.3,
+scikit-learn 1.9.1, SciPy 1.18.1, Pydantic 2.14.1, PyYAML 6.0.3 and joblib 1.6.0
+in that new environment. This modest variation from the development environment
+is compatibility evidence for those cases, not exhaustive dependency testing.
+
+Hosted CI has **not run yet**. The Ubuntu/Python 3.11, Ubuntu/Python 3.12 and
+Windows/Python 3.12 matrix is configured, awaiting an approved GitHub push.
+Docker is deferred. Coverage and synthetic checks do not establish production
+readiness, statistical detection rates or real-world model quality.
+
+### Subsequent hosted run and Windows helper fix (2026-10-29)
+
+The initial pending-hosted status above describes the implementation checkpoint.
+After the approved push, [run 40760649017](https://github.com/singlamohak16/ModelGate/actions/runs/40760649017)
+for `0b2b999` passed quality, both Ubuntu test jobs, coverage gates and the package
+job. Windows/Python 3.12 produced 488 passed and one failure in 89.33 seconds.
+The failure was console-path discovery in the smoke helper, before its audit
+cases ran: standalone Windows Python installs launchers under `Scripts`, unlike
+the sibling executable layout of the local virtual environment.
+
+The local correction uses `sysconfig.get_path("scripts")` with four layout and
+missing-launcher regression cases. The existing application and model calculations
+are unaffected. A new hosted run after a separately approved fix commit/push is
+required before declaring the entire matrix successful.
+
+Hosted Python 3.11 passed 489 tests in 72.71 seconds; hosted Python 3.12 with
+coverage passed 489 in 162.26 seconds, with 99.00% line and 98.49% combined coverage.
+After the helper correction, all 493 local tests passed in 109.84 seconds. Ruff
+lint/format, dependency integrity and the installed-wheel smoke (0/1/2) passed.
+The latter used the corrected helper with the unchanged installed application;
+no new application coverage measurement was claimed for this helper-only fix.
+Local correction evidence is under `artifacts/phase8-ci-fix/`.

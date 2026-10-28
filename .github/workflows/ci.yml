@@ -1,0 +1,131 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'phase/**']
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install 'ruff>=0.6,<1'
+      - run: python -m ruff check .
+      - run: python -m ruff format --check .
+
+  tests:
+    name: Tests (${{ matrix.os }}, Python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            python: '3.11'
+            coverage: false
+          - os: ubuntu-24.04
+            python: '3.12'
+            coverage: true
+          - os: windows-2025
+            python: '3.12'
+            coverage: false
+    env:
+      COVERAGE_FILE: ${{ github.workspace }}/artifacts/ci/.coverage
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python }}
+      # Resolve compatible dependencies; the historical Windows snapshot is not
+      # a universal lock file for Python 3.11 or Linux.
+      - run: python -m pip install -e '.[dev]'
+      - run: python -m pip check
+      - run: python -m pip freeze
+      - name: Test without coverage
+        if: ${{ !matrix.coverage }}
+        run: python -m pytest -q -p no:cacheprovider --junitxml=artifacts/ci/junit.xml
+      - name: Test with subprocess coverage
+        if: ${{ matrix.coverage }}
+        run: python -m coverage run --rcfile=pyproject.toml -m pytest -q -p no:cacheprovider --junitxml=artifacts/ci/junit.xml
+      - name: Combine subprocess coverage
+        if: ${{ matrix.coverage }}
+        run: python -m coverage combine
+      - name: Coverage console report and combined gate
+        if: ${{ matrix.coverage }}
+        run: python -m coverage report
+      - name: Coverage JSON
+        if: ${{ matrix.coverage }}
+        run: python -m coverage json
+      - name: Coverage XML
+        if: ${{ matrix.coverage }}
+        run: python -m coverage xml
+      - name: Line gate and child-process evidence
+        if: ${{ matrix.coverage }}
+        run: python scripts/check_coverage.py artifacts/ci/coverage.json
+      - name: Retain test and coverage evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: tests-${{ matrix.os }}-${{ matrix.python }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            artifacts/ci/junit.xml
+            artifacts/ci/coverage.json
+            artifacts/ci/coverage.xml
+
+  package:
+    name: Package and installed CLI
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install 'build>=1.2,<2'
+      - run: python -m build
+      - run: python scripts/check_distributions.py dist
+      - name: Install wheel into a clean environment
+        shell: bash
+        run: |
+          python -m venv "$RUNNER_TEMP/modelgate-wheel"
+          "$RUNNER_TEMP/modelgate-wheel/bin/python" -m pip install dist/*.whl
+          "$RUNNER_TEMP/modelgate-wheel/bin/python" -m pip check
+          "$RUNNER_TEMP/modelgate-wheel/bin/python" -m pip freeze
+      - name: Run installed console command outside the checkout
+        shell: bash
+        run: |
+          cp scripts/ci_smoke.py "$RUNNER_TEMP/modelgate-smoke.py"
+          cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/modelgate-wheel/bin/python" -I modelgate-smoke.py --require-wheel --output-dir "$GITHUB_WORKSPACE/artifacts/ci/wheel-smoke"
+      - name: Retain only synthetic JSON evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: installed-cli-evidence
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            artifacts/ci/wheel-smoke/summary.json
+            artifacts/ci/wheel-smoke/reports/*.json

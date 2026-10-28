@@ -1,0 +1,7 @@
+include LICENSE README.md pyproject.toml
+include configs/example.yaml configs/random_forest.yaml
+include .github/workflows/ci.yml
+recursive-include scripts *.py
+recursive-include tests *.py
+recursive-include docs *.md
+global-exclude *.pyc *.joblib *.pkl
